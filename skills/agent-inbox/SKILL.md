@@ -9,7 +9,7 @@ compatibility: Needs network access, and Node.js for npx unless the Agent Inbox 
 
 Agent Inbox gives an agent an inbox on Telegram, Slack and email. People write to the agent there, and the agent writes to them: it reads and answers conversations, and it can ask a person a question and wait until they answer.
 
-Every command is `npx @agentinbox/cli <command> <action>`, and nothing needs installing first. If you have tools named `inbox_send`, `inbox_list` and so on, you are connected through MCP: use the tools instead, and read [references/mcp-tools.md](references/mcp-tools.md) for how they map to the commands below and how they wait.
+Every command is `npx @agentinbox/cli <command> <action>`, and nothing needs installing first. If you have tools named `inbox_send`, `inbox_list` and so on, you are connected through MCP: use the tools instead, and read [references/mcp-tools.md](references/mcp-tools.md) for how they map to the commands below, how they wait, and how `inbox_setup` sets up an account that has no agent yet.
 
 ## When to use it, and when to just ask in chat
 
@@ -128,6 +128,7 @@ npx @agentinbox/cli inbox send approve "Ship the pricing change?" --to alice
 Commands exit `1` with a message that says what to do. Pass it on where the operator will see it (this chat, a PR description, the logs) instead of retrying or giving up silently:
 
 - **"No inbox set up yet."** The operator runs `npx @agentinbox/cli setup`, or sets `INBOX_SECRET_KEY` and `INBOX_TO`. Never set it up for them: you don't have their channel credentials, and setup is interactive on purpose. The one exception is a one-time code the operator gave you, in a command such as `npx @agentinbox/cli connect atlas --code BCDF-GHJK`: run it exactly as given. The agent-inbox-cli skill covers setup and connecting.
+- **"Agent Inbox is not set up yet."** The MCP tools' version: the account has no agent. Ask the person for the agent's name and inbox address, then use `inbox_setup` as [references/mcp-tools.md](references/mcp-tools.md) describes.
 - **A used, expired or wrong one-time code.** The message says which. Ask the operator for a new code instead of guessing: the agent stops taking codes for a while after a few wrong ones.
 - **"You've used the 5 free messages of this keyless demo."** Stop and pass the message on. The operator runs `npx @agentinbox/cli login` themselves.
 - **"Outbound email needs an Agent Inbox account."** A keyless setup receives email but can't send it until the operator claims it with `login`.

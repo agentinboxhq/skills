@@ -1,6 +1,6 @@
 ---
 name: agent-inbox-mcp
-description: Connects an AI app to the hosted Agent Inbox MCP server at https://mcp.agentinbox.md and troubleshoots that connection, for Claude, ChatGPT, Cursor, Claude Code or any client that supports remote MCP servers with OAuth sign-in. Use when someone wants Agent Inbox in a chat app or an IDE without the CLI, asks for the MCP address or config, can't finish the sign-in, doesn't see the inbox tools, or asks what the server's tools can do. Not for using the tools once they are connected (agent-inbox) or for the CLI (agent-inbox-cli).
+description: Connects an AI app to the hosted Agent Inbox MCP server at https://mcp.agentinbox.md and troubleshoots that connection, for Claude, ChatGPT, Cursor, Claude Code or any client that supports remote MCP servers with OAuth sign-in. Use when someone wants Agent Inbox in a chat app or an IDE without the CLI, asks for the MCP address or config, can't finish the sign-in, doesn't see the inbox tools, is told by the tools that Agent Inbox isn't set up yet, or asks what the server's tools can do. Not for using the tools once they are connected (agent-inbox) or for the CLI (agent-inbox-cli).
 license: MIT
 ---
 
@@ -12,7 +12,7 @@ The hosted MCP server lets an app act as the operator's agent without the CLI:
 https://mcp.agentinbox.md
 ```
 
-The person signs in with their Agent Inbox account when the app asks, and approves the app. The app never sees the API key, so there is no key or header to configure. Someone without an agent yet is sent through onboarding on their next visit to agentinbox.md; to start, they sign up there and name the agent. Opening the address in a browser just shows the docs.
+The person signs in with their Agent Inbox account when the app asks, and approves the app. The app never sees the API key, so there is no key or header to configure. Signing in opens an Agent Inbox account for someone who has none; the agent itself comes from `inbox_setup` in the app (see "Finish setup from the app") or from the onboarding on agentinbox.md. Opening the address in a browser just shows the docs.
 
 ## Add it to the app
 
@@ -56,10 +56,22 @@ Then run `/mcp` in a session and authenticate `inbox` in the browser.
 - Ask it to call `inbox_list`. It only reads, so it's a safe first call.
 - agentinbox.md shows the app as connected, and when each app or computer last checked the inbox.
 
+## Finish setup from the app
+
+When the account has no agent yet, the tools say that Agent Inbox is not set up yet. `inbox_setup` creates the agent and its email inbox without leaving the app:
+
+1. Call `inbox_setup` with no arguments. It says how far setup got, and may suggest the email the person signed in with.
+2. Ask the person what to call the agent and which inbox address it gets: the part before the `@`, such as `atlas`, in letters, digits and hyphens. Never pick them yourself. Call `inbox_setup` with `agent_name` (up to 60 characters) and `handle` (up to 32) together.
+3. Confirm their email address with them, suggested or not, then call `inbox_setup` with `email`. A confirmation link goes to that address.
+4. When they say they've opened it, call `inbox_setup` with no arguments to check.
+
+A name never renames an existing agent, and a handle never moves an existing mailbox; `handle` alone finishes a mailbox that wasn't created. An email address that's already confirmed changes on agentinbox.md, not here. Telegram and Slack are set up on agentinbox.md or with the CLI.
+
 ## What the tools do
 
 | Tool | What it does |
 |---|---|
+| `inbox_setup` | Creates the agent and its email inbox, sends the owner's confirmation link, or reports how far setup got |
 | `inbox_send` | Starts a conversation. Without a `kind` it's a plain message; `ask`, `approve` or `choose` waits for the answer |
 | `inbox_reply` | Sends into an existing conversation, with the same kinds |
 | `inbox_wait` | Keeps waiting for an answer that hadn't come yet |
@@ -74,13 +86,14 @@ How to use them well, including how waiting works, is the agent-inbox skill.
 
 ## Limits
 
-- No tools for `setup`, `login`, `connect` or `channel`: the operator does those on agentinbox.md or with the CLI. Signing in an app doesn't set up the CLI on that computer either; the CLI connects with a one-time code (see the agent-inbox-cli skill).
+- No tools for `login`, `connect` or `channel`: the operator does those, and Telegram and Slack, on agentinbox.md or with the CLI. Signing in an app doesn't set up the CLI on that computer either; the CLI connects with a one-time code (see the agent-inbox-cli skill).
 - The server is for Agent Inbox cloud only. A self-hosted deployment has no hosted MCP server.
 - Agent Inbox runs in the US region only.
 
 ## Troubleshoot
 
-- **The sign-in never finishes, or the account has no agent.** Finish onboarding on agentinbox.md, then connect again.
+- **The sign-in never finishes.** Finish onboarding on agentinbox.md, then connect again.
+- **The tools say Agent Inbox is not set up yet.** The account has no agent: create it with `inbox_setup`, as in "Finish setup from the app".
 - **The tools don't show up.** Check the address for typos, then reload the app or start a new session; most apps only read the tool list when they connect.
 - **Every tool says the agent is paused.** The operator paused it on agentinbox.md. Messages wait in the inbox until they resume it.
 - **A removed app still reads as connected on agentinbox.md.** Nothing tells the server that an app disconnected. It's harmless.

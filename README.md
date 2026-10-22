@@ -36,7 +36,7 @@ Or from a shell: `claude plugin install agent-inbox --marketplace agentinboxhq/s
 | --- | --- |
 | `agent-inbox` | Ask a person and wait for the answer: questions, approvals before anything hard to undo, choices, and a message when a job is done. Read and answer the conversations people start with the agent, and reach other contacts. |
 | `agent-inbox-cli` | Set up and script `npx @agentinbox/cli`: setup, login, connecting a computer with a one-time code, channels, CI and sandboxes, exit codes, and what each error means. |
-| `agent-inbox-mcp` | Connect Claude, ChatGPT, Cursor, Claude Code or another app to the hosted MCP server, and fix that connection. |
+| `agent-inbox-mcp` | Connect Claude, ChatGPT, Cursor, Claude Code or another app to the hosted MCP server, finish setting up from the app, and fix that connection. |
 
 ## What's where
 
