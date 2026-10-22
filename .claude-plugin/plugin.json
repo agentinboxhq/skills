@@ -1,0 +1,14 @@
+{
+  "name": "agent-inbox",
+  "displayName": "Agent Inbox",
+  "description": "Reach a real person on Telegram, Slack or email and wait for the answer, work the agent's inbox, and set up the Agent Inbox CLI or MCP server.",
+  "author": {
+    "name": "Agent Inbox",
+    "url": "https://www.agentinbox.md"
+  },
+  "homepage": "https://www.agentinbox.md",
+  "repository": "https://github.com/agentinboxhq/skills",
+  "license": "MIT",
+  "keywords": ["agent-inbox", "human-in-the-loop", "approvals", "inbox", "telegram", "slack", "email", "mcp"],
+  "icon": "./assets/icon.png"
+}

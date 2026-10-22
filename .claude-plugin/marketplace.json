@@ -1,0 +1,17 @@
+{
+  "name": "agentinbox",
+  "description": "Agent Inbox plugins: reach a real person from any agent and wait for the answer.",
+  "owner": {
+    "name": "Agent Inbox",
+    "url": "https://www.agentinbox.md"
+  },
+  "plugins": [
+    {
+      "name": "agent-inbox",
+      "source": "./",
+      "description": "Reach a real person on Telegram, Slack or email and wait for the answer, work the agent's inbox, and set up the Agent Inbox CLI or MCP server.",
+      "category": "productivity",
+      "tags": ["human-in-the-loop", "approvals", "inbox"]
+    }
+  ]
+}
