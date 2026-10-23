@@ -11,7 +11,7 @@ They follow the [Agent Skills](https://agentskills.io) format, so they work in C
 npx skills add agentinboxhq/skills
 
 # One skill
-npx skills add agentinboxhq/skills --skill agent-inbox
+npx skills add agentinboxhq/skills --skill agentinbox
 
 # For one agent only
 npx skills add agentinboxhq/skills --agent claude-code
@@ -21,22 +21,22 @@ npx skills add agentinboxhq/skills --agent claude-code
 
 The website publishes the same skills for [Agent Skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc), so `npx skills add https://www.agentinbox.md` installs them too.
 
-In Claude Code you can install them as a plugin instead:
+In Claude Code you can install them as a plugin instead. The plugin also adds the Agent Inbox MCP server, so the agent gets the inbox tools without the CLI. Sign in to Agent Inbox when Claude Code asks, or with `/mcp`.
 
 ```text
 /plugin marketplace add agentinboxhq/skills
-/plugin install agent-inbox@agentinbox
+/plugin install agentinbox@agentinbox
 ```
 
-Or from a shell: `claude plugin install agent-inbox --marketplace agentinboxhq/skills`.
+Or from a shell: `claude plugin install agentinbox --marketplace agentinboxhq/skills`.
 
 ## Skills
 
 | Skill | What it's for |
 | --- | --- |
-| `agent-inbox` | Ask a person and wait for the answer: questions, approvals before anything hard to undo, choices, and a message when a job is done. Read and answer the conversations people start with the agent, and reach other contacts. |
-| `agent-inbox-cli` | Set up and script `npx @agentinbox/cli`: setup, login, connecting a computer with a one-time code, channels, CI and sandboxes, exit codes, and what each error means. |
-| `agent-inbox-mcp` | Connect Claude, ChatGPT, Cursor, Claude Code or another app to the hosted MCP server, finish setting up from the app, and fix that connection. |
+| `agentinbox` | Ask a person and wait for the answer: questions, approvals before anything hard to undo, choices, and a message when a job is done. Read and answer the conversations people start with the agent, and reach other contacts. |
+| `agentinbox-cli` | Set up and script `npx @agentinbox/cli`: setup, login, connecting a computer with a one-time code, channels, CI and sandboxes, exit codes, and what each error means. |
+| `agentinbox-mcp` | Connect Claude, ChatGPT, Cursor, Claude Code or another app to the hosted MCP server, finish setting up from the app, and fix that connection. |
 
 ## What's where
 
@@ -45,6 +45,7 @@ skills/<name>/SKILL.md       one folder per skill, where npx skills and plugin h
 skills/<name>/references/    detail a skill reads only when it needs it
 evals/<name>/<case>/         test prompts for each skill, for claude plugin eval
 .claude-plugin/              the Claude Code plugin and its marketplace
+.mcp.json                    the MCP server the Claude Code plugin adds
 assets/icon.png              the plugin's icon in Anthropic's plugin directory
 plugin.json                  the same plugin in the open Agent Plugins format
 skills.sh.json               how skills.sh groups the skills on its page
@@ -60,7 +61,7 @@ Check your change before you open a pull request:
 ```bash
 node scripts/validate.mjs                                      # this repo's rules
 node --test scripts/validate.test.mjs                          # tests for those rules
-uvx --from skills-ref agentskills validate skills/agent-inbox  # the Agent Skills spec, one skill at a time
+uvx --from skills-ref agentskills validate skills/agentinbox   # the Agent Skills spec, one skill at a time
 claude plugin validate .                                       # the Claude Code plugin and marketplace
 ```
 

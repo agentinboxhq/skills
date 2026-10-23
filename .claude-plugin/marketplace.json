@@ -7,9 +7,9 @@
   },
   "plugins": [
     {
-      "name": "agent-inbox",
+      "name": "agentinbox",
       "source": "./",
-      "description": "Reach a real person on Telegram, Slack or email and wait for the answer, work the agent's inbox, and set up the Agent Inbox CLI or MCP server.",
+      "description": "Reach a real person on Telegram, Slack or email and wait for the answer, and work the agent's inbox. Comes with the Agent Inbox MCP server, plus skills for using it and the CLI.",
       "category": "productivity",
       "tags": ["human-in-the-loop", "approvals", "inbox"]
     }

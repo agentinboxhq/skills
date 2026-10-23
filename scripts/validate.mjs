@@ -2,7 +2,8 @@
 /**
  * Checks this repository the way an installer and a reviewer would: every skill against the Agent Skills
  * spec (https://agentskills.io/specification) and this repo's own rules, the plugin manifests against each
- * other, and the README, skills.sh.json and evals against the skills that exist.
+ * other, the plugin's MCP server against the address the skills give, and the README, skills.sh.json and
+ * evals against the skills that exist.
  *
  * Usage: node scripts/validate.mjs [repo-root]
  * Needs only Node.js 20 or later, no packages.
@@ -17,7 +18,7 @@ const REQUIRED_FIELDS = ['name', 'description', 'license'];
 
 const NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Every skill here is named after the product, so installs next to other vendors' skills don't collide. */
-const NAME_PREFIX = 'agent-inbox';
+const NAME_PREFIX = 'agentinbox';
 /** Claude rejects these in a skill name. */
 const RESERVED_WORDS = ['anthropic', 'claude'];
 const MAX_NAME_LENGTH = 64;
@@ -81,6 +82,7 @@ export function validate(root) {
 
   const skills = checkSkills(root, error, warn);
   const plugin = checkManifests(root, error);
+  checkMcpServers(root, skills, error);
   checkSkillLicenses(root, skills, plugin, error);
   checkReadme(root, skills, error);
   checkSkillsSh(root, skills, error);
@@ -247,11 +249,15 @@ function checkDescription(file, description, error) {
   }
 }
 
-/** The skill names a skill's text mentions, such as "the agent-inbox-cli skill", must exist. */
+/**
+ * The skill names a skill's text mentions, such as "the agentinbox-cli skill", must exist. The CLI's package
+ * (`@agentinbox/cli`) and the site (`agentinbox.md`) aren't mentions.
+ */
 function checkSkillMentions(skill, names, error) {
+  const mention = new RegExp(`(?<![\\w/.@-])${NAME_PREFIX}(?:-[a-z0-9]+)*\\b(?!\\.md)`, 'g');
   for (const file of skill.files.filter((path) => path.endsWith('.md'))) {
     const text = readFileSync(file, 'utf8');
-    for (const match of text.matchAll(/(?<![\w/.-])agent-inbox(?:-[a-z0-9]+)*\b/g)) {
+    for (const match of text.matchAll(mention)) {
       if (!names.has(match[0])) {
         error(file, `mentions "${match[0]}", which isn't a skill in skills/`);
       }
@@ -378,6 +384,29 @@ function checkIcon(root, claudeFile, icon, error) {
   }
   if (png.length >= MAX_ICON_BYTES) {
     error(file, 'must be under 2 MB');
+  }
+}
+
+/** The MCP server the Claude Code plugin adds is the hosted one, at the address the skills give. */
+function checkMcpServers(root, skills, error) {
+  const file = join(root, '.mcp.json');
+  const config = readJson(file, error);
+  if (!config) {
+    return;
+  }
+
+  const servers = Object.entries(config.mcpServers ?? {});
+  if (servers.length === 0) {
+    error(file, 'needs "mcpServers" with the hosted MCP server');
+  }
+
+  const skillText = skills.map((skill) => readFileSync(join(skill.dir, 'SKILL.md'), 'utf8')).join('\n');
+  for (const [name, server] of servers) {
+    if (server.type !== 'http' || typeof server.url !== 'string') {
+      error(file, `"${name}" must be a remote server: { "type": "http", "url": "…" }`);
+    } else if (!skillText.includes(server.url)) {
+      error(file, `"${name}" points at ${server.url}, which no SKILL.md gives as the server's address`);
+    }
   }
 }
 
