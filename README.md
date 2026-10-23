@@ -30,6 +30,10 @@ In Claude Code you can install them as a plugin instead. The plugin also adds th
 
 Or from a shell: `claude plugin install agentinbox --marketplace agentinboxhq/skills`.
 
+Claude Code doesn't update plugins from marketplaces other than Anthropic's on its own. Run `claude plugin update agentinbox@agentinbox`, or turn on auto-update for the `agentinbox` marketplace in `/plugin`.
+
+Cursor, Codex, GitHub Copilot, VS Code and the other [Agent Plugins clients](https://agent-plugins.org/compatible-clients) can load this repository as a plugin too, with the same skills and MCP server.
+
 ## Skills
 
 | Skill | What it's for |
@@ -46,6 +50,7 @@ skills/<name>/references/    detail a skill reads only when it needs it
 evals/<name>/<case>/         test prompts for each skill, for claude plugin eval
 .claude-plugin/              the Claude Code plugin and its marketplace
 .mcp.json                    the MCP server the Claude Code plugin adds
+mcp.json                     the same server for Agent Plugins clients
 assets/icon.png              the plugin's icon in Anthropic's plugin directory
 plugin.json                  the same plugin in the open Agent Plugins format
 skills.sh.json               how skills.sh groups the skills on its page
@@ -65,7 +70,7 @@ uvx --from skills-ref agentskills validate skills/agentinbox   # the Agent Skill
 claude plugin validate .                                       # the Claude Code plugin and marketplace
 ```
 
-CI runs all four on every pull request. A merge to `main` ships right away: `npx skills add` and the Claude Code marketplace both read `main`, and the plugin has no `version`, so each commit is a new version.
+CI runs all four on every pull request. A merge to `main` ships right away for new installs: `npx skills add` and the Claude Code marketplace both read `main`, and the plugin has no `version`, so each commit is a new version. Existing installs get it with `npx skills update` or `claude plugin update`.
 
 When you write:
 

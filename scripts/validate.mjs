@@ -37,6 +37,7 @@ const CONTENTS_AFTER_LINES = 100;
 const MIN_EVAL_CASES = 3;
 
 const AGENT_PLUGINS_SCHEMA = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json';
+const AGENT_PLUGINS_MCP_SCHEMA = 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json';
 const AGENT_PLUGINS_FIELDS = new Set([
   '$schema',
   'name',
@@ -387,27 +388,54 @@ function checkIcon(root, claudeFile, icon, error) {
   }
 }
 
-/** The MCP server the Claude Code plugin adds is the hosted one, at the address the skills give. */
+/**
+ * The MCP server the plugin adds is the hosted one, at the address the skills give. Claude Code reads it from
+ * .mcp.json, and Agent Plugins clients from mcp.json, which calls the transport `streamable-http`. Both files
+ * list the same servers.
+ */
 function checkMcpServers(root, skills, error) {
-  const file = join(root, '.mcp.json');
-  const config = readJson(file, error);
-  if (!config) {
-    return;
+  const skillText = skills.map((skill) => readFileSync(join(skill.dir, 'SKILL.md'), 'utf8')).join('\n');
+  const claudeFile = join(root, '.mcp.json');
+  const portableFile = join(root, 'mcp.json');
+  const claude = readJson(claudeFile, error);
+  const portable = readJson(portableFile, error);
+
+  if (portable) {
+    if (portable.$schema !== AGENT_PLUGINS_MCP_SCHEMA) {
+      error(portableFile, `$schema must be ${AGENT_PLUGINS_MCP_SCHEMA}`);
+    }
+    for (const key of Object.keys(portable)) {
+      if (key !== '$schema' && key !== 'mcpServers') {
+        error(portableFile, `"${key}" isn't an Agent Plugins mcp.json field`);
+      }
+    }
   }
 
+  const claudeServers = claude && checkServers(claudeFile, claude, 'http', skillText, error);
+  const portableServers = portable && checkServers(portableFile, portable, 'streamable-http', skillText, error);
+  if (claudeServers && portableServers && claudeServers !== portableServers) {
+    error(portableFile, 'must list the same servers, at the same addresses, as .mcp.json');
+  }
+}
+
+/** Each server must be a remote one of `type`, at an address the skills give. Returns them as "name url" lines. */
+function checkServers(file, config, type, skillText, error) {
   const servers = Object.entries(config.mcpServers ?? {});
   if (servers.length === 0) {
     error(file, 'needs "mcpServers" with the hosted MCP server');
   }
-
-  const skillText = skills.map((skill) => readFileSync(join(skill.dir, 'SKILL.md'), 'utf8')).join('\n');
   for (const [name, server] of servers) {
-    if (server.type !== 'http' || typeof server.url !== 'string') {
-      error(file, `"${name}" must be a remote server: { "type": "http", "url": "…" }`);
+    if (server.type !== type || typeof server.url !== 'string') {
+      error(file, `"${name}" must be a remote server: { "type": "${type}", "url": "…" }`);
     } else if (!skillText.includes(server.url)) {
       error(file, `"${name}" points at ${server.url}, which no SKILL.md gives as the server's address`);
     }
   }
+
+  return servers
+    .map(([name, server]) => `${name} ${server.url}`)
+    .sort()
+    .join('\n');
 }
 
 function checkSkillLicenses(root, skills, plugin, error) {

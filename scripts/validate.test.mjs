@@ -151,6 +151,15 @@ describe('validate', () => {
     assert.match(errorsOf(dir), /"inbox" points at https:\/\/mcp.agentinbox.md\/mcp, which no SKILL.md gives/);
   });
 
+  it('rejects an mcp.json that does not match .mcp.json', () => {
+    const dir = copyRepo();
+    edit(dir, 'mcp.json', (text) => text.replace('"inbox"', '"agentinbox"').replace('"streamable-http"', '"http"'));
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /"agentinbox" must be a remote server: \{ "type": "streamable-http"/);
+    assert.match(errors, /must list the same servers, at the same addresses, as .mcp.json/);
+  });
+
   it('rejects a README, skills.sh.json or evals that miss a skill', () => {
     const dir = copyRepo();
     edit(dir, 'README.md', (text) => text.replace(/^\| `agentinbox-mcp` \|.*\n/m, ''));
