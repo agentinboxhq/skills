@@ -1,0 +1,15 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "groupings": [
+    {
+      "title": "Use the inbox",
+      "description": "Ask a person and wait for the answer, and read and reply to the agent's conversations.",
+      "skills": ["agentinbox"]
+    },
+    {
+      "title": "Set it up",
+      "description": "Connect a computer, a CI job or a chat app to the agent.",
+      "skills": ["agentinbox-cli", "agentinbox-mcp"]
+    }
+  ]
+}

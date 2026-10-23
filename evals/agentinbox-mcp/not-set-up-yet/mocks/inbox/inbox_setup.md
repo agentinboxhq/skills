@@ -1,0 +1,1 @@
+Agent Inbox is not set up yet. Ask the user for an agent name and an inbox address (letters, digits and hyphens), then call inbox_setup with agent_name and handle. After that, pass email so a confirmation link goes out. Their sign-in email looks like sam.ortiz@example.com; confirm it with them before passing it as email.
