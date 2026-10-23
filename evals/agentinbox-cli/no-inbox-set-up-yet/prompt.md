@@ -1,5 +1,5 @@
 ---
-description: Passes "No inbox set up yet" on to the operator instead of setting it up for them.
+description: Fixes "No inbox set up yet" in CI with secrets, and sets nothing up until the operator agrees.
 tags: [triggers, behavior]
 max_turns: 8
 allowed_tools: [Skill, Read, Glob, Grep]

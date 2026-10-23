@@ -127,10 +127,10 @@ npx @agentinbox/cli inbox send approve "Ship the pricing change?" --to alice
 
 Commands exit `1` with a message that says what to do. Pass it on where the operator will see it (this chat, a PR description, the logs) instead of retrying or giving up silently:
 
-- **"No inbox set up yet."** The operator runs `npx @agentinbox/cli setup`, or sets `INBOX_SECRET_KEY` and `INBOX_TO`. Never set it up for them: you don't have their channel credentials, and setup is interactive on purpose. The one exception is a one-time code the operator gave you, in a command such as `npx @agentinbox/cli connect atlas --code BCDF-GHJK`: run it exactly as given. The agentinbox-cli skill covers setup and connecting.
+- **"No inbox set up yet."** Pass it on. The operator runs `npx @agentinbox/cli setup`, sets `INBOX_SECRET_KEY` and `INBOX_TO`, or gives you a one-time code in a command such as `npx @agentinbox/cli connect atlas --code BCDF-GHJK`: run that exactly as given. If they ask you to set it up, you may run `setup` with their name and email, then `login`, which they approve on agentinbox.md. Never set it up unasked, and never ask for a Telegram or Slack token. The agentinbox-cli skill covers setup and connecting.
 - **"Agent Inbox is not set up yet."** The MCP tools' version: the account has no agent. Ask the person for the agent's name and inbox address, then use `inbox_setup` as [references/mcp-tools.md](references/mcp-tools.md) describes.
 - **A used, expired or wrong one-time code.** The message says which. Ask the operator for a new code instead of guessing: the agent stops taking codes for a while after a few wrong ones.
-- **"You've used the 5 free messages of this keyless demo."** Stop and pass the message on. The operator runs `npx @agentinbox/cli login` themselves.
+- **"You've used the 5 free messages of this keyless demo."** Stop and pass the message on. `npx @agentinbox/cli login` claims the setup: the operator runs it, or asks you to and approves it on agentinbox.md.
 - **"Outbound email needs an Agent Inbox account."** A keyless setup receives email but can't send it until the operator claims it with `login`.
 - **"This agent is paused."** The operator paused it on agentinbox.md on purpose. Stop retrying, say that it's paused, and pick the inbox up again once they resume it. Messages people send meanwhile wait in the inbox.
 
