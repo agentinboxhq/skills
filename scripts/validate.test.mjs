@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, it } from 'node:test';
@@ -158,6 +158,17 @@ describe('validate', () => {
     const errors = errorsOf(dir);
     assert.match(errors, /"agentinbox" must be a remote server: \{ "type": "streamable-http"/);
     assert.match(errors, /must list the same servers, at the same addresses, as .mcp.json/);
+  });
+
+  it('rejects an eval mock for a server or a tool the plugin does not have', () => {
+    const dir = copyRepo();
+    writeFileSync(join(dir, 'evals/mocks/inbox/inbox_archive.md'), 'Archived.\n');
+    mkdirSync(join(dir, 'evals/agentinbox/tell-me-when-done/mocks/agentinbox'), { recursive: true });
+    writeFileSync(join(dir, 'evals/agentinbox/tell-me-when-done/mocks/agentinbox/inbox_send.md'), 'Delivered.\n');
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /inbox_archive.md: answers "inbox_archive", which isn't a tool in evals\/mocks\/inbox\/_tools.json/);
+    assert.match(errors, /mocks\/agentinbox: stands in for "agentinbox", which isn't a server in .mcp.json/);
   });
 
   it('rejects a README, skills.sh.json or evals that miss a skill', () => {

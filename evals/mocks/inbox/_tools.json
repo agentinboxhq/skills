@@ -1,0 +1,597 @@
+{
+  "tools": [
+    {
+      "name": "inbox_setup",
+      "title": "Set up the agent inbox",
+      "description": "Create the agent and its email inbox, or report how far setup got. Call with no arguments to see status and a suggested owner email. Ask the user for an agent name and address before creating; pass agent_name and handle together. Pass email only after the user confirms the address — a confirmation link goes out, and a later call with no arguments says whether they opened it. A name never changes an existing agent, and a handle never moves an existing mailbox; pass handle alone to finish a mailbox that was not created. This tool does not replace an email that is already confirmed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "agent_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "What the agent is called (up to 60 characters). Required with handle to create."
+          },
+          "handle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mailbox local-part the user chose, such as \"atlas\". Letters, digits and hyphens. Required with agent_name to create."
+          },
+          "email": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 320,
+            "description": "The owner's email to confirm. Confirm the suggested address from a no-argument call with the user before passing it."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "inbox_send",
+      "title": "Send an inbox message",
+      "description": "Start a conversation with one or more contacts. Leave kind out for a plain message, which returns once it is delivered; ask, approve or choose waits for the answer. Before you send, call inbox_list with filter \"unread\" so you do not miss a conversation a person started.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "approve",
+              "choose"
+            ],
+            "description": "Leave out for a plain message that needs no answer. ask: a free-text answer; approve: Approve/Deny buttons; choose: one of options."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "description": "The main message or question."
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 320
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/properties/to/anyOf/0"
+                },
+                "minItems": 1,
+                "maxItems": 50
+              }
+            ],
+            "description": "Contact id, email address, or up to 50 of them. With inbox_send, omit to reach the account owner. With inbox_reply, these are the only contacts who may answer."
+          },
+          "via": {
+            "type": "string",
+            "enum": [
+              "telegram",
+              "slack",
+              "email"
+            ],
+            "description": "Override each contact's default channel."
+          },
+          "from": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Attribution label shown to the person, such as \"deploy-bot\"."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 432000,
+            "description": "How long a question remains answerable, in seconds (default 86400, max 432000)."
+          },
+          "wait_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50,
+            "description": "How long to wait for the answer now, in seconds (default 45)."
+          },
+          "icon": {
+            "type": "string",
+            "description": "Slack-only card icon: MCP catalog id, display name, or an HTTPS URL. Ignored on other channels."
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Secondary line under the message."
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Supporting details under the subtitle."
+          },
+          "approve_label": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Approve button label (approve only)."
+          },
+          "deny_label": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Deny button label (approve only)."
+          },
+          "extra_actions": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "maxItems": 4,
+            "description": "Extra approve buttons after Approve and Deny (approve only, max 4)."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/properties/extra_actions/items"
+            },
+            "minItems": 2,
+            "maxItems": 10,
+            "description": "Required for choose. Each choice is a label or an object with a stable id and label."
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "inbox_reply",
+      "title": "Reply in a conversation",
+      "description": "Send into an existing conversation. Leave kind out for a plain message; ask, approve or choose waits for the answer. A reply goes out on the conversation's channel, so it has no via option.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Conversation id (conv_...) from inbox_list."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "approve",
+              "choose"
+            ],
+            "description": "Leave out for a plain message that needs no answer. ask: a free-text answer; approve: Approve/Deny buttons; choose: one of options."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "description": "The main message or question."
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 320
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/properties/to/anyOf/0"
+                },
+                "minItems": 1,
+                "maxItems": 50
+              }
+            ],
+            "description": "Contact id, email address, or up to 50 of them. With inbox_send, omit to reach the account owner. With inbox_reply, these are the only contacts who may answer."
+          },
+          "anyone_may_answer": {
+            "type": "boolean",
+            "description": "When true with conversation, anyone in it may answer, including when the conversation already has a contact. A conversation with no contact already lets everyone in it answer."
+          },
+          "from": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Attribution label shown to the person, such as \"deploy-bot\"."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 432000,
+            "description": "How long a question remains answerable, in seconds (default 86400, max 432000)."
+          },
+          "wait_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50,
+            "description": "How long to wait for the answer now, in seconds (default 45)."
+          },
+          "icon": {
+            "type": "string",
+            "description": "Slack-only card icon: MCP catalog id, display name, or an HTTPS URL. Ignored on other channels."
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Secondary line under the message."
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Supporting details under the subtitle."
+          },
+          "approve_label": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Approve button label (approve only)."
+          },
+          "deny_label": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Deny button label (approve only)."
+          },
+          "extra_actions": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "maxItems": 4,
+            "description": "Extra approve buttons after Approve and Deny (approve only, max 4)."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/properties/extra_actions/items"
+            },
+            "minItems": 2,
+            "maxItems": 10,
+            "description": "Required for choose. Each choice is a label or an object with a stable id and label."
+          }
+        },
+        "required": [
+          "conversation",
+          "message"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "inbox_wait",
+      "title": "Wait for an answer",
+      "description": "Keep waiting for the answer to an earlier ask, approve or choose that had no answer yet. Call it again while the result says the request is still open.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "The id from the earlier result."
+          },
+          "wait_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50,
+            "description": "How long to wait for the answer now, in seconds (default 45)."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "contact_invite",
+      "title": "Invite a person",
+      "description": "Get a link that lets another person connect their chat app, so you can reach them too. Nothing is sent for you: give the link to the user to pass on. Afterwards reach them with the id you chose here.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_.@-]+$",
+            "description": "A short id for the person, such as \"alice\". You use it later as `to`."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Their name, such as \"Alice Chen\"."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "contact_list",
+      "title": "List contacts",
+      "description": "List the people you can reach, with the id to pass as `to`. Your operator is marked (you). When the result ends with a cursor, call it again with after to see the rest before you decide someone is not there.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Page size (default 50)."
+          },
+          "after": {
+            "type": "string",
+            "description": "Cursor from a previous page."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "inbox_list",
+      "title": "List conversations",
+      "description": "List the conversations in the agent's inbox. People can message the agent first: call this with filter \"unread\" before you send, so you see new conversations. Conversations with strangers are hidden unless senders is \"all\". Showing a conversation does not mark it read; any send into it does.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string",
+            "enum": [
+              "unread",
+              "read",
+              "all"
+            ],
+            "description": "Unread conversations, read ones, or both (default all)."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "resolved",
+              "all"
+            ],
+            "description": "Open conversations, resolved ones, or both (default open)."
+          },
+          "senders": {
+            "type": "string",
+            "enum": [
+              "contacts",
+              "all"
+            ],
+            "description": "Conversations a contact has written in, or all of them, strangers included (default contacts)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Page size (default 20)."
+          },
+          "after": {
+            "type": "string",
+            "description": "Cursor from a previous page (the last conversation id)."
+          },
+          "wait_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 25,
+            "description": "Hold the request up to this many seconds until a conversation matches (max 25, default 0)."
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "inbox_show",
+      "title": "Show a conversation",
+      "description": "Show the messages in a conversation. Looking at it does not mark it read — use inbox_read or send a reply for that. People and messages are labelled contact or stranger.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Conversation id (conv_...) from inbox_list."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many recent messages to return (default 20)."
+          },
+          "before": {
+            "type": "string",
+            "description": "Message id cursor for older pages."
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "inbox_read",
+      "title": "Mark a conversation read",
+      "description": "Mark a conversation read without sending a reply. Showing a conversation does not mark it read.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Conversation id (conv_...) from inbox_list."
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "inbox_resolve",
+      "title": "Resolve a conversation",
+      "description": "Mark a conversation resolved. It opens again when anyone writes in it. Use after you have finished with it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Conversation id (conv_...) from inbox_list."
+          }
+        },
+        "required": [
+          "conversation"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    }
+  ]
+}

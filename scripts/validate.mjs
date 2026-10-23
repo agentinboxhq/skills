@@ -83,11 +83,11 @@ export function validate(root) {
 
   const skills = checkSkills(root, error, warn);
   const plugin = checkManifests(root, error);
-  checkMcpServers(root, skills, error);
+  const servers = checkMcpServers(root, skills, error);
   checkSkillLicenses(root, skills, plugin, error);
   checkReadme(root, skills, error);
   checkSkillsSh(root, skills, error);
-  checkEvals(root, skills, error);
+  checkEvals(root, skills, servers, error);
 
   return { skills: skills.map((skill) => skill.name), errors, warnings };
 }
@@ -416,6 +416,8 @@ function checkMcpServers(root, skills, error) {
   if (claudeServers && portableServers && claudeServers !== portableServers) {
     error(portableFile, 'must list the same servers, at the same addresses, as .mcp.json');
   }
+
+  return Object.keys(claude?.mcpServers ?? {});
 }
 
 /** Each server must be a remote one of `type`, at an address the skills give. Returns them as "name url" lines. */
@@ -495,9 +497,13 @@ function checkSkillsSh(root, skills, error) {
   }
 }
 
-/** evals/<skill>/<case>/ holds each case: a prompt.md and at least one grader. */
-function checkEvals(root, skills, error) {
+/**
+ * evals/<skill>/<case>/ holds each case: a prompt.md and at least one grader. evals/mocks/ and a case's own
+ * mocks/ stand in for the plugin's MCP servers.
+ */
+function checkEvals(root, skills, servers, error) {
   const evalsDir = join(root, 'evals');
+  const mockDirs = [join(evalsDir, 'mocks')];
   for (const skill of skills) {
     const dir = join(evalsDir, skill.name);
     const cases = isDirectory(dir)
@@ -516,6 +522,44 @@ function checkEvals(root, skills, error) {
       const graders = join(caseDir, 'graders');
       if (!isDirectory(graders) || !readdirSync(graders).some((name) => name.endsWith('.md'))) {
         error(caseDir, 'needs at least one grader in graders/');
+      }
+      mockDirs.push(join(caseDir, 'mocks'));
+    }
+  }
+
+  checkMocks(evalsDir, mockDirs.filter(isDirectory), servers, error);
+}
+
+/**
+ * Each mocks/<server>/ stands in for a server in .mcp.json, since a mock under any other name never answers,
+ * and each of its <tool>.md files answers a tool in that server's saved tools/list, evals/mocks/<server>/_tools.json.
+ */
+function checkMocks(evalsDir, mockDirs, servers, error) {
+  const toolsOf = new Map();
+  for (const mockDir of mockDirs) {
+    for (const entry of readdirSync(mockDir, { withFileTypes: true })) {
+      // .replay/ holds recorded answers, not a server.
+      if (!entry.isDirectory() || entry.name.startsWith('.')) {
+        continue;
+      }
+
+      const serverDir = join(mockDir, entry.name);
+      if (!servers.includes(entry.name)) {
+        error(serverDir, `stands in for "${entry.name}", which isn't a server in .mcp.json, so no case calls it`);
+        continue;
+      }
+
+      const toolsFile = join(evalsDir, 'mocks', entry.name, '_tools.json');
+      if (!toolsOf.has(entry.name)) {
+        const saved = existsSync(toolsFile) ? readJson(toolsFile, error) : null;
+        toolsOf.set(entry.name, saved ? new Set((saved.tools ?? []).map((tool) => tool.name)) : null);
+      }
+      const tools = toolsOf.get(entry.name);
+      for (const file of readdirSync(serverDir).filter((name) => name.endsWith('.md') && !name.startsWith('_'))) {
+        const tool = file.slice(0, -'.md'.length);
+        if (tools && !tools.has(tool)) {
+          error(join(serverDir, file), `answers "${tool}", which isn't a tool in ${relative(dirname(evalsDir), toolsFile)}`);
+        }
       }
     }
   }

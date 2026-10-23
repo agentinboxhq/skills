@@ -48,6 +48,7 @@ Cursor, Codex, GitHub Copilot, VS Code and the other [Agent Plugins clients](htt
 skills/<name>/SKILL.md       one folder per skill, where npx skills and plugin hosts look
 skills/<name>/references/    detail a skill reads only when it needs it
 evals/<name>/<case>/         test prompts for each skill, for claude plugin eval
+evals/mocks/inbox/           the stand-in MCP server those tests call
 .claude-plugin/              the Claude Code plugin and its marketplace
 .mcp.json                    the MCP server the Claude Code plugin adds
 mcp.json                     the same server for Agent Plugins clients
