@@ -131,6 +131,33 @@ describe('validate', () => {
     assert.match(errors, /"license" differs from plugin.json/);
   });
 
+  it('rejects a Cursor manifest outside the Cursor schema or out of step with the other manifests', () => {
+    const dir = copyRepo();
+    edit(dir, '.cursor-plugin/plugin.json', (text) => {
+      const manifest = JSON.parse(text);
+      manifest.privacyPolicyUrl = 'https://www.agentinbox.md/privacy';
+      manifest.author.url = 'https://www.agentinbox.md';
+      manifest.description = 'Ask a person.';
+      manifest.logo = './assets/logo.png';
+      // Without its placement, Grok Bot never offers to sign in.
+      delete manifest.mcpServers.inbox.placement;
+      manifest.mcpServers.mail = { type: 'http', url: 'https://mail.example.com/mcp' };
+
+      return JSON.stringify(manifest);
+    });
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /"privacyPolicyUrl" isn't a field in Cursor's plugin schema/);
+    assert.match(errors, /"author.url" isn't allowed/);
+    assert.match(errors, /"description" differs from .claude-plugin\/plugin.json/);
+    assert.match(errors, /"logo" must be the plugin's icon, .\/assets\/icon.png/);
+    assert.match(
+      errors,
+      /"mcpServers.inbox" must be \{ "type": "http", "url": "https:\/\/mcp.agentinbox.md", "placement": "server" \}/
+    );
+    assert.match(errors, /"mcpServers.mail" isn't a server in .mcp.json/);
+  });
+
   it('rejects a plugin icon the directory would not take', () => {
     const dir = copyRepo();
     const icon = readFileSync(join(dir, 'assets/icon.png'));

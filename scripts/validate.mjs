@@ -86,6 +86,36 @@ const CODEX_INSTALL_POLICIES = new Set(['AVAILABLE', 'INSTALLED_BY_DEFAULT']);
 const CODEX_AUTH_POLICIES = new Set(['ON_INSTALL', 'ON_USE']);
 
 /**
+ * The fields Cursor's plugin schema allows in .cursor-plugin/plugin.json
+ * (https://github.com/cursor/plugins/blob/main/schemas/plugin.schema.json). It allows no others, and its author
+ * has only `name` and `email`.
+ */
+const CURSOR_FIELDS = new Set([
+  'name',
+  'displayName',
+  'description',
+  'version',
+  'minClientVersions',
+  'author',
+  'publisher',
+  'homepage',
+  'repository',
+  'license',
+  'logo',
+  'keywords',
+  'category',
+  'tags',
+  'commands',
+  'agents',
+  'skills',
+  'rules',
+  'hooks',
+  'variables',
+  'mcpServers',
+]);
+const CURSOR_AUTHOR_FIELDS = new Set(['name', 'email']);
+
+/**
  * What Anthropic's plugin directory takes as the listing icon (`icon` in .claude-plugin/plugin.json): a square
  * PNG of 512 to 2048 px, under 2 MB. It keeps the icon from the first submission, so a wrong one sticks.
  */
@@ -118,6 +148,7 @@ export function validate(root) {
   const skills = checkSkills(root, error, warn);
   const manifests = checkManifests(root, error);
   checkCodexPlugin(root, manifests, skills, error);
+  checkCursorManifest(root, manifests.claude ?? manifests.portable, error);
   const servers = checkMcpServers(root, skills, error);
   checkSkillLicenses(root, skills, manifests.claude ?? manifests.portable, error);
   checkReadme(root, skills, error);
@@ -388,6 +419,65 @@ function checkManifests(root, error) {
   }
 
   return { portable, claude, marketplace };
+}
+
+/**
+ * The Cursor plugin is this same plugin: the name, words and logo of the Claude Code one, and the servers in
+ * .mcp.json. Grok Bot installs plugins from the Cursor Marketplace too, and it connects only to a hosted server
+ * marked `"placement": "server"` (https://github.com/cursor/plugins/commit/dcb387cb06751c4efa0ff00c30477ab1cfaa1bdc);
+ * without it, the plugin installs but never offers to sign in. Claude Code doesn't know that field, so the Cursor
+ * manifest lists the servers itself instead of pointing at .mcp.json.
+ */
+function checkCursorManifest(root, plugin, error) {
+  const file = join(root, '.cursor-plugin', 'plugin.json');
+  const cursor = readJson(file, error);
+  if (!cursor) {
+    return;
+  }
+
+  for (const key of Object.keys(cursor)) {
+    if (!CURSOR_FIELDS.has(key)) {
+      error(file, `"${key}" isn't a field in Cursor's plugin schema, which allows no others`);
+    }
+  }
+  for (const key of Object.keys(cursor.author ?? {})) {
+    if (!CURSOR_AUTHOR_FIELDS.has(key)) {
+      error(file, `"author.${key}" isn't allowed: Cursor's author has only "name" and "email"`);
+    }
+  }
+
+  if (plugin) {
+    for (const key of ['name', 'displayName', 'description', 'repository', 'license']) {
+      if (cursor[key] !== plugin[key]) {
+        error(file, `"${key}" differs from .claude-plugin/plugin.json; keep the manifests the same`);
+      }
+    }
+    if (cursor.logo !== plugin.icon) {
+      error(file, `"logo" must be the plugin's icon, ${plugin.icon}`);
+    }
+  }
+
+  const servers = cursor.mcpServers;
+  if (!servers || typeof servers !== 'object' || Array.isArray(servers)) {
+    error(file, '"mcpServers" must list the servers of .mcp.json by name');
+
+    return;
+  }
+
+  // .mcp.json's own problems are reported by checkMcpServers, so they aren't reported twice here.
+  const expected = readJson(join(root, '.mcp.json'), () => {})?.mcpServers ?? {};
+  for (const [name, entry] of Object.entries(expected)) {
+    const url = entry?.url;
+    const server = servers[name];
+    if (server?.type !== 'http' || server.url !== url || server.placement !== 'server') {
+      error(file, `"mcpServers.${name}" must be { "type": "http", "url": "${url}", "placement": "server" }`);
+    }
+  }
+  for (const name of Object.keys(servers)) {
+    if (!(name in expected)) {
+      error(file, `"mcpServers.${name}" isn't a server in .mcp.json`);
+    }
+  }
 }
 
 /** The plugin's `icon` is a PNG in this repository that the directory accepts. */

@@ -8,6 +8,8 @@
   },
   "homepage": "https://www.agentinbox.md",
   "repository": "https://github.com/agentinboxhq/skills",
+  "documentationUrl": "https://www.agentinbox.md/claude-code",
+  "supportUrl": "https://github.com/agentinboxhq/skills/issues",
   "license": "MIT",
   "keywords": ["agentinbox", "human-in-the-loop", "approvals", "inbox", "telegram", "slack", "email", "mcp"],
   "icon": "./assets/icon.png"
