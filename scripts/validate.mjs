@@ -2,8 +2,8 @@
 /**
  * Checks this repository the way an installer and a reviewer would: every skill against the Agent Skills
  * spec (https://agentskills.io/specification) and this repo's own rules, the plugin manifests against each
- * other, the plugin's MCP server against the address the skills give, and the README, skills.sh.json and
- * evals against the skills that exist.
+ * other, the Codex plugin's listing and marketplace against the plugin, the plugin's MCP server against the
+ * address the skills give, and the README, skills.sh.json and evals against the skills that exist.
  *
  * Usage: node scripts/validate.mjs [repo-root]
  * Needs only Node.js 20 or later, no packages.
@@ -50,6 +50,40 @@ const AGENT_PLUGINS_FIELDS = new Set([
   'keywords',
   'extensions',
 ]);
+/** The keys a remote server may have in mcp.json. Codex drops a server with any other key, without a word. */
+const AGENT_PLUGINS_REMOTE_SERVER_FIELDS = new Set(['type', 'url', 'headers']);
+
+/**
+ * Codex reads plugin.json the Agent Plugins way: the skills from skills/ and the MCP server from mcp.json. Its own
+ * listing goes under `extensions["com.openai"]`: the `interface`, and the skill it offers to run after installing.
+ */
+const CODEX_EXTENSION = 'com.openai';
+const CODEX_EXTENSION_FIELDS = new Set(['interface', 'onboardingSkill']);
+/** The listing fields, spelled the way OpenAI documents them. Codex ignores any other field. */
+const CODEX_INTERFACE_FIELDS = new Set([
+  'displayName',
+  'shortDescription',
+  'longDescription',
+  'developerName',
+  'category',
+  'capabilities',
+  'websiteURL',
+  'privacyPolicyURL',
+  'termsOfServiceURL',
+  'defaultPrompt',
+  'brandColor',
+  'composerIcon',
+  'logo',
+  'logoDark',
+  'screenshots',
+]);
+/** Codex shows at most three starter prompts of up to 128 characters, and drops the rest. */
+const MAX_CODEX_PROMPTS = 3;
+const MAX_CODEX_PROMPT_LENGTH = 128;
+/** Codex reads its marketplace from here first, and .claude-plugin/marketplace.json only when this is missing. */
+const CODEX_MARKETPLACE = join('.agents', 'plugins', 'marketplace.json');
+const CODEX_INSTALL_POLICIES = new Set(['AVAILABLE', 'INSTALLED_BY_DEFAULT']);
+const CODEX_AUTH_POLICIES = new Set(['ON_INSTALL', 'ON_USE']);
 
 /**
  * The fields Cursor's plugin schema allows in .cursor-plugin/plugin.json
@@ -112,10 +146,11 @@ export function validate(root) {
   const warn = (file, message) => warnings.push(`${relative(root, file) || '.'}: ${message}`);
 
   const skills = checkSkills(root, error, warn);
-  const plugin = checkManifests(root, error);
-  checkCursorManifest(root, plugin, error);
+  const manifests = checkManifests(root, error);
+  checkCodexPlugin(root, manifests, skills, error);
+  checkCursorManifest(root, manifests.claude ?? manifests.portable, error);
   const servers = checkMcpServers(root, skills, error);
-  checkSkillLicenses(root, skills, plugin, error);
+  checkSkillLicenses(root, skills, manifests.claude ?? manifests.portable, error);
   checkReadme(root, skills, error);
   checkSkillsSh(root, skills, error);
   checkEvals(root, skills, servers, error);
@@ -383,7 +418,7 @@ function checkManifests(root, error) {
     }
   }
 
-  return claude ?? portable;
+  return { portable, claude, marketplace };
 }
 
 /**
@@ -479,9 +514,224 @@ function checkIcon(root, claudeFile, icon, error) {
 }
 
 /**
+ * The Codex plugin is this repository as Codex reads it: plugin.json with Codex's listing under
+ * `extensions["com.openai"]`, the skills, mcp.json, and the marketplace in .agents/plugins/marketplace.json.
+ */
+function checkCodexPlugin(root, { portable, claude, marketplace }, skills, error) {
+  const file = join(root, 'plugin.json');
+  const overlay = join(root, '.codex-plugin', 'plugin.json');
+  if (existsSync(overlay)) {
+    error(
+      overlay,
+      `Codex ignores it while plugin.json has extensions["${CODEX_EXTENSION}"]; keep Codex's listing there`
+    );
+  }
+  if (!portable) {
+    return;
+  }
+
+  const extensions = isObject(portable.extensions) ? portable.extensions : {};
+  if (portable.extensions !== undefined && !isObject(portable.extensions)) {
+    error(file, '"extensions" must be an object with one entry per client');
+  }
+  for (const [namespace, value] of Object.entries(extensions)) {
+    if (!isObject(value)) {
+      error(file, `extensions["${namespace}"] must be an object`);
+    }
+  }
+
+  const codex = isObject(extensions[CODEX_EXTENSION]) ? extensions[CODEX_EXTENSION] : null;
+  if (codex) {
+    for (const key of Object.keys(codex)) {
+      if (!CODEX_EXTENSION_FIELDS.has(key)) {
+        error(file, `extensions["${CODEX_EXTENSION}"] has "${key}"; only "interface" and "onboardingSkill" belong there`);
+      }
+    }
+
+    checkCodexInterface(root, file, codex.interface, portable, claude, error);
+    if (codex.onboardingSkill !== undefined) {
+      checkOnboardingSkill(file, codex.onboardingSkill, skills, error);
+    }
+  } else {
+    error(file, `needs extensions["${CODEX_EXTENSION}"], the Codex plugin's listing`);
+  }
+
+  const category = isObject(codex?.interface) ? codex.interface.category : undefined;
+  checkCodexMarketplace(root, marketplace, portable.name, category, error);
+}
+
+/** Codex's listing names the plugin the way Claude Code's does, and says what plugin.json says. */
+function checkCodexInterface(root, file, listing, portable, claude, error) {
+  if (!isObject(listing)) {
+    error(file, `extensions["${CODEX_EXTENSION}"] needs an "interface" object, the plugin's listing in Codex`);
+
+    return;
+  }
+
+  for (const key of Object.keys(listing)) {
+    if (!CODEX_INTERFACE_FIELDS.has(key)) {
+      error(file, `Codex interface "${key}" isn't a field Codex reads`);
+    }
+  }
+
+  if (typeof listing.displayName !== 'string' || !listing.displayName.trim()) {
+    error(file, 'Codex interface needs "displayName", or Codex shows the plugin by its id');
+  } else if (claude?.displayName && listing.displayName !== claude.displayName) {
+    error(file, 'Codex interface "displayName" differs from .claude-plugin/plugin.json; keep the two names the same');
+  }
+
+  // Codex fills these from plugin.json when they're missing; when they're given, they must agree with it.
+  const filledIn = [
+    ['longDescription', portable.description, '"description"'],
+    ['developerName', portable.author?.name, '"author.name"'],
+    ['websiteURL', portable.homepage, '"homepage"'],
+  ];
+  for (const [key, expected, source] of filledIn) {
+    if (listing[key] !== undefined && listing[key] !== expected) {
+      error(file, `Codex interface "${key}" differs from the plugin's ${source}`);
+    }
+  }
+
+  if (listing.category !== undefined && (typeof listing.category !== 'string' || !listing.category.trim())) {
+    error(file, 'Codex interface "category" must be a word such as "Productivity"');
+  }
+  for (const key of ['privacyPolicyURL', 'termsOfServiceURL']) {
+    if (listing[key] !== undefined && !/^https:\/\/\S+$/.test(listing[key])) {
+      error(file, `Codex interface "${key}" must be an https:// address`);
+    }
+  }
+  if (listing.capabilities !== undefined && !isStringList(listing.capabilities)) {
+    error(file, 'Codex interface "capabilities" must be a list of words, such as ["Read", "Write"]');
+  }
+  if (listing.brandColor !== undefined && !/^#[0-9A-Fa-f]{6}$/.test(listing.brandColor)) {
+    error(file, 'Codex interface "brandColor" must be a hex color, such as "#FF5C30"');
+  }
+  checkCodexPrompts(file, listing.defaultPrompt, error);
+
+  for (const key of ['composerIcon', 'logo', 'logoDark']) {
+    if (listing[key] !== undefined) {
+      checkRepoFile(root, file, `Codex interface "${key}"`, listing[key], error);
+    }
+  }
+  if (listing.screenshots !== undefined) {
+    for (const screenshot of Array.isArray(listing.screenshots) ? listing.screenshots : [listing.screenshots]) {
+      checkRepoFile(root, file, 'Codex interface "screenshots"', screenshot, error);
+    }
+  }
+}
+
+/** Codex drops a starter prompt it can't show instead of failing, so catch it here. */
+function checkCodexPrompts(file, prompts, error) {
+  if (prompts === undefined) {
+    return;
+  }
+
+  if (!isStringList(prompts) || prompts.length === 0) {
+    error(file, 'Codex interface "defaultPrompt" must be a list of starter prompts');
+
+    return;
+  }
+  if (prompts.length > MAX_CODEX_PROMPTS) {
+    error(
+      file,
+      `Codex interface "defaultPrompt" has ${prompts.length} prompts; Codex shows only the first ${MAX_CODEX_PROMPTS}`
+    );
+  }
+  for (const prompt of prompts) {
+    // Codex counts characters after joining runs of whitespace.
+    const length = [...prompt.trim().split(/\s+/).join(' ')].length;
+    if (length > MAX_CODEX_PROMPT_LENGTH) {
+      error(
+        file,
+        `Codex interface "defaultPrompt" "${prompt}" is ${length} characters; Codex drops it past ${MAX_CODEX_PROMPT_LENGTH}`
+      );
+    }
+  }
+}
+
+/** The skill Codex offers to run once the plugin is installed: one of the skills in skills/. */
+function checkOnboardingSkill(file, path, skills, error) {
+  const match = typeof path === 'string' ? /^(?:\.\/)?skills\/([^/]+)\/SKILL\.md$/.exec(path) : null;
+  if (!match || !skills.some((skill) => skill.name === match[1])) {
+    error(
+      file,
+      `extensions["${CODEX_EXTENSION}"].onboardingSkill is ${path}; it must be the SKILL.md of a skill in skills/`
+    );
+  }
+}
+
+/**
+ * Codex's marketplace lists this repository as the plugin, under the name Claude Code's marketplace has, so the
+ * plugin is agentinbox@agentinbox in both.
+ */
+function checkCodexMarketplace(root, claudeMarketplace, pluginName, category, error) {
+  const file = join(root, CODEX_MARKETPLACE);
+  const marketplace = readJson(file, error);
+  if (!marketplace) {
+    return;
+  }
+
+  if (claudeMarketplace?.name && marketplace.name !== claudeMarketplace.name) {
+    error(file, `"name" must be "${claudeMarketplace.name}", as in .claude-plugin/marketplace.json, so the plugin has one id`);
+  }
+  if (typeof marketplace.interface?.displayName !== 'string' || !marketplace.interface.displayName.trim()) {
+    error(file, `needs "interface.displayName", the marketplace's title in Codex`);
+  }
+
+  const entry = Array.isArray(marketplace.plugins) ? marketplace.plugins.find(isThisRepository) : undefined;
+  if (!entry) {
+    error(file, 'needs a plugin entry whose source is { "source": "local", "path": "./" }, this repository');
+
+    return;
+  }
+  if (entry.name !== pluginName) {
+    error(file, `entry "${entry.name}" must have the plugin's name "${pluginName}"`);
+  }
+
+  const { installation, authentication } = entry.policy ?? {};
+  if (installation !== undefined && !CODEX_INSTALL_POLICIES.has(installation)) {
+    error(
+      file,
+      `"policy.installation" must be ${[...CODEX_INSTALL_POLICIES].join(' or ')}, or Codex won't offer the plugin`
+    );
+  }
+  if (authentication !== undefined && !CODEX_AUTH_POLICIES.has(authentication)) {
+    error(file, `"policy.authentication" must be ${[...CODEX_AUTH_POLICIES].join(' or ')}`);
+  }
+
+  if (typeof entry.category !== 'string' || !entry.category.trim()) {
+    error(file, `entry "${entry.name}" needs a "category"`);
+  } else if (category !== undefined && entry.category !== category) {
+    // Codex shows the marketplace's category in place of the plugin's.
+    error(file, `entry "${entry.name}" has category "${entry.category}" but the Codex interface has "${category}"`);
+  }
+}
+
+function isThisRepository(plugin) {
+  const source = plugin?.source;
+  const path = typeof source === 'string' ? source : source?.source === 'local' ? source.path : undefined;
+
+  return path === './' || path === '.';
+}
+
+/** A file a manifest names: a path from the repository root, to a file that's in it. */
+function checkRepoFile(root, file, label, path, error) {
+  if (typeof path !== 'string' || !path.startsWith('./')) {
+    error(file, `${label} must be a path from the repository root, such as ./assets/icon.png`);
+
+    return;
+  }
+
+  const target = resolve(root, path);
+  if (relative(root, target).startsWith('..') || !existsSync(target)) {
+    error(file, `${label} points at ${path}, which isn't a file in this repository`);
+  }
+}
+
+/**
  * The MCP server the plugin adds is the hosted one, at the address the skills give. Claude Code reads it from
- * .mcp.json, and Agent Plugins clients from mcp.json, which calls the transport `streamable-http`. Both files
- * list the same servers.
+ * .mcp.json, and Codex and the other Agent Plugins clients from mcp.json, which calls the transport
+ * `streamable-http`. Both files list the same servers.
  */
 function checkMcpServers(root, skills, error) {
   const skillText = skills.map((skill) => readFileSync(join(skill.dir, 'SKILL.md'), 'utf8')).join('\n');
@@ -497,6 +747,17 @@ function checkMcpServers(root, skills, error) {
     for (const key of Object.keys(portable)) {
       if (key !== '$schema' && key !== 'mcpServers') {
         error(portableFile, `"${key}" isn't an Agent Plugins mcp.json field`);
+      }
+    }
+    // OpenAI's plugin docs put an `extensions` object here for sign-in settings, but Codex 0.160 refuses the
+    // server then, and the hosted server's own OAuth metadata already tells every client how to sign in.
+    for (const [name, server] of Object.entries(portable.mcpServers ?? {})) {
+      const extra = isObject(server)
+        ? Object.keys(server).filter((key) => !AGENT_PLUGINS_REMOTE_SERVER_FIELDS.has(key))
+        : [];
+      if (extra.length > 0) {
+        const fields = extra.map((key) => `"${key}"`).join(', ');
+        error(portableFile, `"${name}" has ${fields}; Codex drops a server with more than type, url and headers`);
       }
     }
   }
@@ -743,6 +1004,14 @@ function listFiles(dir) {
 
 function isDirectory(path) {
   return existsSync(path) && statSync(path).isDirectory();
+}
+
+function isObject(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isStringList(value) {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string' && item.trim() !== '');
 }
 
 function lineOf(text, index) {

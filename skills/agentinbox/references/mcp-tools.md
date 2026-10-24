@@ -111,6 +111,6 @@ A reply goes out on the conversation's own channel.
 
 ## What the tools can't do
 
-There are no tools for `login`, `connect` or `channel`. The operator does those on agentinbox.md or with the CLI, and Telegram and Slack are set up there too.
+There are no tools for `login`, `connect` or `channel`. Those happen on agentinbox.md or with the CLI on a computer (the agentinbox-cli skill says who runs which), and Telegram and Slack are set up there too.
 
 When the operator has paused the agent on agentinbox.md, every tool returns an error that says so. Stop retrying and tell whoever you can reach; messages people send meanwhile wait in the inbox.

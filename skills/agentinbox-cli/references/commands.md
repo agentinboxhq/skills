@@ -22,7 +22,7 @@ Creates the agent's inbox without an account (a keyless setup), or in the accoun
 | Flag | Meaning |
 |---|---|
 | `--name <name>` | The operator's first and last name, shown to people they invite. Skips the question |
-| `--email <address>` | The operator's email address, for the email channel. Skips the question |
+| `--email <address>` | The operator's email address, for the email channel. Skips the question. Without a terminal, a keyless setup needs it |
 | `--agent-name <name>` | What the agent is called, as people see it |
 | `--agent-description <text>` | A line about what the agent does, shown with its name |
 | `--agent-picture <file-or-url>` | A JPEG or PNG of up to 2 MB. Needs `login` first |
@@ -40,7 +40,7 @@ The token flags are for the operator's own scripts. An agent never asks anyone f
 npx @agentinbox/cli login [--api-url <url>]
 ```
 
-Opens agentinbox.md, where the operator signs in or signs up, checks that the page shows the same code as the terminal, and approves. Deny on that page stops the login. A keyless setup made on this computer moves into the account, and its channels keep working. Afterwards the operator's contact in the account is who a send without `--to` reaches.
+Opens agentinbox.md, where the operator signs in or signs up, checks that the page shows the same code as the terminal, and approves. Deny on that page stops the login. It also prints the link and the code, for when the browser opens somewhere the operator can't see, and waits up to an hour. A keyless setup made on this computer moves into the account, and its channels keep working. Afterwards the operator's contact in the account is who a send without `--to` reaches.
 
 ## connect
 

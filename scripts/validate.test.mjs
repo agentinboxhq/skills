@@ -187,6 +187,81 @@ describe('validate', () => {
     assert.match(errors, /must list the same servers, at the same addresses, as .mcp.json/);
   });
 
+  it('rejects an mcp.json server with a field Codex drops it for', () => {
+    const dir = copyRepo();
+    edit(dir, 'mcp.json', (text) => {
+      const config = JSON.parse(text);
+      config.mcpServers.inbox.extensions = { 'com.openai': { auth: { type: 'oauth' } } };
+
+      return JSON.stringify(config);
+    });
+
+    assert.match(errorsOf(dir), /"inbox" has "extensions"; Codex drops a server with more than type, url and headers/);
+  });
+
+  it('rejects a Codex listing that disagrees with the plugin or that Codex would cut short', () => {
+    const dir = copyRepo();
+    edit(dir, 'plugin.json', (text) => {
+      const plugin = JSON.parse(text);
+      const listing = plugin.extensions['com.openai'].interface;
+      listing.displayName = 'Inbox';
+      listing.websiteURL = 'https://agentinbox.md';
+      listing.websiteUrl = 'https://www.agentinbox.md';
+      listing.defaultPrompt.push('Summarize what my contacts asked for this week.');
+
+      return JSON.stringify(plugin);
+    });
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /Codex interface "displayName" differs from .claude-plugin\/plugin.json/);
+    assert.match(errors, /Codex interface "websiteURL" differs from the plugin's "homepage"/);
+    assert.match(errors, /Codex interface "websiteUrl" isn't a field Codex reads/);
+    assert.match(errors, /"defaultPrompt" has 4 prompts; Codex shows only the first 3/);
+  });
+
+  it('rejects a Codex listing that names files that are not there', () => {
+    const dir = copyRepo();
+    edit(dir, 'plugin.json', (text) => {
+      const plugin = JSON.parse(text);
+      const codex = plugin.extensions['com.openai'];
+      codex.interface.logo = './assets/codex-logo.png';
+      codex.onboardingSkill = './skills/agentinbox-setup/SKILL.md';
+      codex.skills = './skills/';
+
+      return JSON.stringify(plugin);
+    });
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /Codex interface "logo" points at .\/assets\/codex-logo.png, which isn't a file in this repository/);
+    assert.match(errors, /onboardingSkill is .\/skills\/agentinbox-setup\/SKILL.md; it must be the SKILL.md of a skill in skills\//);
+    assert.match(errors, /extensions\["com.openai"\] has "skills"/);
+  });
+
+  it('rejects a Codex marketplace that would give the plugin another id or hide it', () => {
+    const dir = copyRepo();
+    edit(dir, '.agents/plugins/marketplace.json', (text) => {
+      const marketplace = JSON.parse(text);
+      marketplace.name = 'agent-inbox';
+      marketplace.plugins[0].category = 'Developer Tools';
+      marketplace.plugins[0].policy.installation = 'NOT_AVAILABLE';
+
+      return JSON.stringify(marketplace);
+    });
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /"name" must be "agentinbox", as in .claude-plugin\/marketplace.json/);
+    assert.match(errors, /has category "Developer Tools" but the Codex interface has "Productivity"/);
+    assert.match(errors, /"policy.installation" must be AVAILABLE or INSTALLED_BY_DEFAULT/);
+  });
+
+  it('rejects a Codex manifest that Codex would ignore', () => {
+    const dir = copyRepo();
+    mkdirSync(join(dir, '.codex-plugin'));
+    writeFileSync(join(dir, '.codex-plugin/plugin.json'), '{ "name": "agentinbox" }\n');
+
+    assert.match(errorsOf(dir), /\.codex-plugin\/plugin.json: Codex ignores it while plugin.json has extensions\["com.openai"\]/);
+  });
+
   it('rejects an eval mock for a server or a tool the plugin does not have', () => {
     const dir = copyRepo();
     writeFileSync(join(dir, 'evals/mocks/inbox/inbox_archive.md'), 'Archived.\n');

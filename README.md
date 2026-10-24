@@ -2,7 +2,7 @@
 
 Agent skills for [Agent Inbox](https://www.agentinbox.md), an inbox for your agent. People write to the agent on Telegram, Slack and email, and the agent can ask a real person a question and wait for the answer. These skills teach a coding agent when to reach a person, how to read and answer its conversations, and how to set up the CLI or the MCP server.
 
-They follow the [Agent Skills](https://agentskills.io) format, so they work in Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI and the other agents that read it.
+They follow the [Agent Skills](https://agentskills.io) format, so they work in Claude Code, Codex, OpenCode, Cursor, GitHub Copilot, Gemini CLI, Hermes, OpenClaw and the other agents that read it.
 
 ## Install
 
@@ -21,6 +21,17 @@ npx skills add agentinboxhq/skills --agent claude-code
 
 The website publishes the same skills for [Agent Skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc), so `npx skills add https://www.agentinbox.md` installs them too.
 
+Hermes and OpenClaw read skills from their own folder in your home directory, so install them there once, for all your projects. A new session picks them up.
+
+```bash
+npx skills add agentinboxhq/skills -g --agent hermes-agent -y   # into ~/.hermes/skills
+npx skills add agentinboxhq/skills -g --agent openclaw -y       # into ~/.openclaw/skills
+```
+
+Without a terminal, as when an agent runs it, `npx skills add` needs `--agent` and `-y`, or it stops before installing anything.
+
+### Claude Code
+
 In Claude Code you can install them as a plugin instead. The plugin also adds the Agent Inbox MCP server, so the agent gets the inbox tools without the CLI. Sign in to Agent Inbox when Claude Code asks, or with `/mcp`.
 
 ```text
@@ -32,15 +43,47 @@ Or from a shell: `claude plugin install agentinbox --marketplace agentinboxhq/sk
 
 Claude Code doesn't update plugins from marketplaces other than Anthropic's on its own. Run `claude plugin update agentinbox@agentinbox`, or turn on auto-update for the `agentinbox` marketplace in `/plugin`.
 
-Cursor, Codex, GitHub Copilot, VS Code and the other [Agent Plugins clients](https://agent-plugins.org/compatible-clients) can load this repository as a plugin too, with the same skills and MCP server.
+### Codex
+
+Codex installs the same plugin from this repository, with the MCP server and the skills. `codex mcp login inbox` signs in to Agent Inbox in the browser.
+
+```bash
+codex plugin marketplace add agentinboxhq/skills
+codex plugin add agentinbox@agentinbox
+codex mcp login inbox
+```
+
+Once the marketplace is added, Agent Inbox is also in `/plugins` in Codex. Codex checks the marketplace for a new commit each time it starts and updates the plugin; `codex plugin marketplace upgrade agentinbox` does it right away.
+
+### OpenCode
+
+OpenCode reads the skills `npx skills add` installs. For the inbox tools, add the MCP server to `opencode.json` in your project, or to `~/.config/opencode/opencode.json` for every project:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "inbox": {
+      "type": "remote",
+      "url": "https://mcp.agentinbox.md"
+    }
+  }
+}
+```
+
+Then sign in with `opencode mcp auth inbox`. `opencode mcp list` shows whether it's signed in.
+
+### Other agents
+
+Cursor, GitHub Copilot, VS Code and the other [Agent Plugins clients](https://agent-plugins.org/compatible-clients) can load this repository as a plugin too, with the same skills and MCP server.
 
 ## Skills
 
 | Skill | What it's for |
 | --- | --- |
 | `agentinbox` | Ask a person and wait for the answer: questions, approvals before anything hard to undo, choices, and a message when a job is done. Read and answer the conversations people start with the agent, and reach other contacts. |
-| `agentinbox-cli` | Set up and script `npx @agentinbox/cli`: setup, login, connecting a computer with a one-time code, channels, CI and sandboxes, exit codes, and what each error means. |
-| `agentinbox-mcp` | Connect Claude, ChatGPT, Cursor, Claude Code or another app to the hosted MCP server, finish setting up from the app, and fix that connection. |
+| `agentinbox-cli` | Set up and script `npx @agentinbox/cli`: setup and login, by the operator or by an agent they ask, connecting a computer with a one-time code, channels, CI and sandboxes, exit codes, and what each error means. |
+| `agentinbox-mcp` | Connect Claude, ChatGPT, Cursor, Claude Code, Codex, OpenCode or another app to the hosted MCP server, finish setting up from the app, and fix that connection. |
 
 ## What's where
 
@@ -51,12 +94,14 @@ evals/<name>/<case>/         test prompts for each skill, for claude plugin eval
 evals/mocks/inbox/           the stand-in MCP server those tests call
 .claude-plugin/              the Claude Code plugin and its marketplace
 .cursor-plugin/              the same plugin for the Cursor Marketplace, which Grok Bot installs from too
+.agents/plugins/             the Codex marketplace
 .mcp.json                    the MCP server the Claude Code plugin adds
-mcp.json                     the same server for Agent Plugins clients
-assets/icon.png              the plugin's icon in Anthropic's plugin directory and the Cursor Marketplace
-plugin.json                  the same plugin in the open Agent Plugins format
+mcp.json                     the same server for Codex and the other Agent Plugins clients
+assets/icon.png              the plugin's icon in Anthropic's plugin directory, Codex and the Cursor Marketplace
+plugin.json                  the same plugin in the open Agent Plugins format, with Codex's listing under extensions
 skills.sh.json               how skills.sh groups the skills on its page
 scripts/validate.mjs         the checks CI runs
+scripts/check-codex-plugin.mjs   installs the plugin into a throwaway Codex home and checks it
 ```
 
 ## Change a skill
@@ -70,9 +115,10 @@ node scripts/validate.mjs                                      # this repo's rul
 node --test scripts/validate.test.mjs                          # tests for those rules
 uvx --from skills-ref agentskills validate skills/agentinbox   # the Agent Skills spec, one skill at a time
 claude plugin validate .                                       # the Claude Code plugin and marketplace
+node scripts/check-codex-plugin.mjs                            # the Codex plugin, installed for real
 ```
 
-CI runs all four on every pull request. A merge to `main` ships right away for new installs: `npx skills add` and the Claude Code marketplace both read `main`, and the plugin has no `version`, so each commit is a new version. Existing installs get it with `npx skills update` or `claude plugin update`.
+CI runs all five on every pull request. A merge to `main` ships right away for new installs: `npx skills add` and both plugin marketplaces read `main`. The plugin has no `version`, so Claude Code treats each commit as a new version, and Codex reinstalls it whenever its marketplace has a new commit. Existing installs get it with `npx skills update`, `claude plugin update`, or `codex plugin marketplace upgrade agentinbox`; Codex also checks each time it starts.
 
 When you write:
 
