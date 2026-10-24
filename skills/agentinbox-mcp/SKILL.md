@@ -1,6 +1,6 @@
 ---
 name: agentinbox-mcp
-description: Connects an AI app to the hosted Agent Inbox MCP server at https://mcp.agentinbox.md and troubleshoots that connection, for Claude, ChatGPT, Cursor, Claude Code or any client that supports remote MCP servers with OAuth sign-in. Use when someone wants Agent Inbox in a chat app or an IDE without the CLI, asks for the MCP address or config, can't finish the sign-in, doesn't see the inbox tools, is told by the tools that Agent Inbox isn't set up yet, or asks what the server's tools can do. Not for using the tools once they are connected (agentinbox) or for the CLI (agentinbox-cli).
+description: Connects an AI app to the hosted Agent Inbox MCP server at https://mcp.agentinbox.md and troubleshoots that connection, for Claude, ChatGPT, Cursor, Claude Code, Codex, OpenCode or any client that supports remote MCP servers with OAuth sign-in. Use when someone wants Agent Inbox in a chat app or an IDE without the CLI, asks for the MCP address or config, can't finish the sign-in, doesn't see the inbox tools, is told by the tools that Agent Inbox isn't set up yet, or asks what the server's tools can do. Not for using the tools once they are connected (agentinbox) or for the CLI (agentinbox-cli).
 license: MIT
 ---
 
@@ -48,11 +48,37 @@ claude mcp add --transport http inbox https://mcp.agentinbox.md
 
 Either way, run `/mcp` in a session and authenticate it in the browser. Don't add it by hand next to the plugin, or every tool shows up twice.
 
+**Codex**: the Agent Inbox plugin comes with the server and the Agent Inbox skills:
+
+```bash
+codex plugin marketplace add agentinboxhq/skills
+codex plugin add agentinbox@agentinbox    # or install it from /plugins in Codex
+codex mcp login inbox
+```
+
+`codex mcp login inbox` opens the sign-in in the browser. Without the plugin, add the server with `codex mcp add inbox --url https://mcp.agentinbox.md` and sign in the same way; use one or the other, not both.
+
+**OpenCode**: add the server to `opencode.json` in the project, or to `~/.config/opencode/opencode.json` for every project:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "inbox": {
+      "type": "remote",
+      "url": "https://mcp.agentinbox.md"
+    }
+  }
+}
+```
+
+Then run `opencode mcp auth inbox` and sign in in the browser. `opencode mcp list` shows whether it's signed in.
+
 **Any other client** that supports remote MCP servers over HTTP with OAuth sign-in: add `https://mcp.agentinbox.md` with no headers and no API key, then finish the sign-in in the browser.
 
 ## Check that it works
 
-- The app now has tools named `inbox_send`, `inbox_list` and so on, sometimes with the server's name in front (`mcp__inbox__inbox_list`, or `mcp__plugin_agentinbox_inbox__inbox_list` from the plugin).
+- The app now has tools named `inbox_send`, `inbox_list` and so on, sometimes with the server's name in front (`mcp__inbox__inbox_list`, `mcp__plugin_agentinbox_inbox__inbox_list` from the Claude Code plugin, or `inbox_inbox_list` in OpenCode).
 - Ask it to call `inbox_list`. It only reads, so it's a safe first call.
 - agentinbox.md shows the app as connected, and when each app or computer last checked the inbox.
 
@@ -86,7 +112,7 @@ How to use them well, including how waiting works, is the agentinbox skill.
 
 ## Limits
 
-- No tools for `login`, `connect` or `channel`: the operator does those, and Telegram and Slack, on agentinbox.md or with the CLI. Signing in an app doesn't set up the CLI on that computer either; the CLI connects with a one-time code (see the agentinbox-cli skill).
+- No tools for `login`, `connect` or `channel`: those, and Telegram and Slack, happen on agentinbox.md or with the CLI (the agentinbox-cli skill says who runs which). Signing in an app doesn't set up the CLI on that computer either; the CLI connects with a one-time code.
 - The server is for Agent Inbox cloud only. A self-hosted deployment has no hosted MCP server.
 - Agent Inbox runs in the US region only.
 

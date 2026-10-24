@@ -13,9 +13,10 @@ How an agent uses `inbox` and `contact` to ask people things and answer conversa
 
 ## Who runs what
 
-- **The operator** (the person the agent works for) runs `setup`, `login` and `channel add`, and changes settings on agentinbox.md: who can reach the agent, pausing it, the API key.
+- **The operator** (the person the agent works for) runs `setup`, `login` and `channel add`, or asks an agent to set up for them, and changes settings on agentinbox.md: who can reach the agent, pausing it, the API key.
 - **An agent** runs `inbox` and `contact` commands, and `connect` with a one-time code the operator gave it.
-- An agent never runs `setup` or `login` for the operator, and never asks for a Telegram bot token or a Slack token. When a step needs the operator, tell them what to run.
+- An agent may run `setup` (with `--email` and `--name`) and `login` when its operator asks it to, and the operator approves the login on agentinbox.md. See "Set up for your operator".
+- An agent never asks for a Telegram bot token or a Slack token. When the host refuses to save the key, tell the operator the command to run instead.
 
 ## Set up an inbox
 
@@ -30,13 +31,28 @@ npx @agentinbox/cli login                 # keep the setup in an Agent Inbox acc
 - `setup` asks for a name and an email address, creates the agent's inbox and prints its address. Enter skips the channel question. Running it again resumes whatever step is left.
 - Without a terminal, pass the answers as flags: `--name "Ada Lovelace" --email ada@example.com --agent-name "Deploy bot"`. The rest are in [references/commands.md](references/commands.md).
 - On a terminal, `channel add telegram` or `slack` asks whether to paste a token there or finish on a page. Without a terminal it prints a page link (`https://www.agentinbox.md/connect#…`, or `connect?channel=slack#…` for Slack) and waits up to 15 minutes while the person creates the bot with @BotFather and taps Start (Telegram), or pastes an App Configuration Token and clicks Add to Slack. Forward that link exactly. Exit `11` means they didn't finish in time; nothing is broken, and running the same command again resumes at the missing step.
-- At the end, `setup` shows how to teach coding agents: `npx skills add agentinboxhq/skills`.
+- At the end, `setup` shows how to teach coding agents: `npx skills add agentinboxhq/skills`. Without a terminal it installs nothing unless it gets `--agent` and `-y`, such as `npx skills add agentinboxhq/skills --agent codex -y`; Hermes and OpenClaw also take `-g` (`--agent hermes-agent` or `--agent openclaw`).
 
 ### Keyless setup and login
 
 `setup` without an account makes a **keyless setup**: a free demo with a small message allowance. Its email inbox can receive but sends nothing until the operator claims it. When the allowance runs out, commands exit `1` with "You've used the 5 free messages of this keyless demo." and a sign-up link.
 
 `login` opens agentinbox.md, where the operator checks that the page shows the same code as the terminal and approves. The keyless setup moves into the account and its channels keep working. The CLI saves the key in `~/.agentinbox/config.json`.
+
+### Set up for your operator
+
+Only when the operator asks you to. Ask them for the name and email address to use; never make either up.
+
+```bash
+npx @agentinbox/cli setup --name "Ada Lovelace" --email ada@example.com
+npx @agentinbox/cli login
+```
+
+1. `setup` makes a keyless setup with the agent's inbox, then emails a confirmation link to that address and waits up to 5 minutes for it to be opened, so tell the operator to open it now. Add `--agent-name` only if they named the agent.
+2. `login` prints a link to agentinbox.md and a code, and waits up to an hour. Give the operator both: they sign in or sign up there, check that the page shows the same code, and approve. The keyless setup moves into their account. If the command stopped before they approved, run it again for a new code.
+3. Telegram and Slack stay with the operator: they add them on agentinbox.md, or run `npx @agentinbox/cli channel add telegram` (or `slack`) in their own terminal.
+
+Both commands wait for the operator, so give them time: run them in the background or with a long timeout if your host stops commands after a few minutes. Both save the key in `~/.agentinbox/config.json`. When the host refuses to save it there, or to run the command at all, don't look for a way around that: tell the operator the command to run in their own terminal.
 
 ## Connect this computer with a one-time code
 
@@ -94,9 +110,9 @@ Scripts branch on these, never on the printed text:
 
 | The CLI prints | What to do |
 |---|---|
-| `No inbox set up yet. Ask your operator to run: npx @agentinbox/cli setup (or set INBOX_SECRET_KEY + INBOX_TO).` | The operator runs `setup` or `connect`, or the job gets `INBOX_SECRET_KEY` and `INBOX_TO`. Pass the message on; don't set it up for them |
-| `You've used the 5 free messages of this keyless demo.` | Stop retrying. The operator runs `login`, or signs up from the link and then runs `login` |
-| `Outbound email needs an Agent Inbox account.` | A keyless setup can't send email. The operator runs `login` to claim it |
+| `No inbox set up yet. Ask your operator to run: npx @agentinbox/cli setup (or set INBOX_SECRET_KEY + INBOX_TO).` | Pass the message on. The operator runs `setup` or `connect`, asks you to set up for them, or gives the job `INBOX_SECRET_KEY` and `INBOX_TO`. Don't set it up unasked |
+| `You've used the 5 free messages of this keyless demo.` | Stop retrying. `login` claims the setup: the operator runs it, or asks you to and approves it on agentinbox.md |
+| `Outbound email needs an Agent Inbox account.` | A keyless setup can't send email until `login` claims it, run by the operator or, when they ask, by you |
 | `This agent is paused: …` | The operator paused it on agentinbox.md on purpose. Stop retrying until they resume it |
 | A used, expired or wrong code | Ask the operator for a new one-time code |
 | No linked channel for a contact | Invite them: `contact invite <id> --name "…"`, then send again once they've connected |
