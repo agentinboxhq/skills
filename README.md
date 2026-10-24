@@ -50,9 +50,10 @@ skills/<name>/references/    detail a skill reads only when it needs it
 evals/<name>/<case>/         test prompts for each skill, for claude plugin eval
 evals/mocks/inbox/           the stand-in MCP server those tests call
 .claude-plugin/              the Claude Code plugin and its marketplace
+.cursor-plugin/              the same plugin for the Cursor Marketplace, which Grok Bot installs from too
 .mcp.json                    the MCP server the Claude Code plugin adds
 mcp.json                     the same server for Agent Plugins clients
-assets/icon.png              the plugin's icon in Anthropic's plugin directory
+assets/icon.png              the plugin's icon in Anthropic's plugin directory and the Cursor Marketplace
 plugin.json                  the same plugin in the open Agent Plugins format
 skills.sh.json               how skills.sh groups the skills on its page
 scripts/validate.mjs         the checks CI runs
@@ -90,6 +91,14 @@ claude plugin eval .                                  # every case, with a no-pl
 ```
 
 See [evals/README.md](evals/README.md) for what each case checks.
+
+## What it sends where
+
+The plugin has no hooks or scripts. Everything happens when the agent calls an inbox tool or runs a command a skill gives it:
+
+- **The Agent Inbox MCP server**, `https://mcp.agentinbox.md`. The agent's tool calls go there, such as a message to send or a conversation to read, with the sign-in you approved. The server acts on your Agent Inbox account, and the account's key never leaves it.
+- **The Agent Inbox CLI**, when the agent runs `npx @agentinbox/cli`. npm downloads the package the first time. The CLI talks only to the Agent Inbox API at `https://www.agentinbox.md/api`, and keeps the account's key in `~/.agentinbox/config.json`.
+- **The people the agent reaches.** Its messages go out on Telegram, Slack or email, wherever each contact connected, and their answers come back the same way.
 
 ## License
 
