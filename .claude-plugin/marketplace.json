@@ -9,7 +9,7 @@
     {
       "name": "agentinbox",
       "source": "./",
-      "description": "Reach a real person on Telegram, Slack or email and wait for the answer, and work the agent's inbox. Comes with the Agent Inbox MCP server, plus skills for using it and the CLI.",
+      "description": "Gives your agent an E-mail address, Telegram handle, and Slack bot in a unified communication Inbox.",
       "category": "productivity",
       "tags": ["human-in-the-loop", "approvals", "inbox"]
     }
