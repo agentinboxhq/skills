@@ -10,6 +10,8 @@
   "repository": "https://github.com/agentinboxhq/skills",
   "documentationUrl": "https://www.agentinbox.md/claude-code",
   "supportUrl": "https://github.com/agentinboxhq/skills/issues",
+  "privacyPolicyUrl": "https://www.novu.co/privacy/",
+  "termsOfServiceUrl": "https://www.novu.co/terms/",
   "license": "MIT",
   "keywords": ["agentinbox", "human-in-the-loop", "approvals", "inbox", "telegram", "slack", "email", "mcp"],
   "icon": "./assets/icon.png"
