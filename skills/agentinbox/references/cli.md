@@ -10,6 +10,7 @@ Every flag of the commands an agent uses, and what `--json` prints. Commands sta
 - Cards and buttons
 - What `--json` prints
 - `contact list` and `contact invite`
+- In a run that `listen` started
 
 ## inbox list
 
@@ -47,7 +48,7 @@ npx @agentinbox/cli inbox reply <conversation> [ask|approve|choose] <text...>
 
 | Flag | Meaning |
 |---|---|
-| `--to <id\|email>` | A contact, or comma-separated contacts (max 50; the first valid answer wins). On `send` the default is `INBOX_TO`, then your operator. On `reply` it limits who may answer |
+| `--to <id\|email>` | A contact, or comma-separated contacts (max 50; the first valid answer wins). On `send` the default is `INBOX_TO`, then your operator. On `reply` it limits who may answer; one who isn't in a direct conversation gets the question in their own chat too, and the answer comes back to the conversation |
 | `--via <channel>` | `send` only: `telegram`, `slack` or `email` instead of each contact's default channel |
 | `--anyone` | `reply` only: anyone in the conversation may answer, strangers included. Not with `--to` |
 | `--from <name>` | The label the person sees, such as `deploy-bot` |
@@ -126,3 +127,23 @@ npx @agentinbox/cli contact invite <id|email> [--name "Alice Chen"] [--via <chan
 - `--async` prints the link, or sends the verification email, and returns without waiting.
 - `--name` is what `contact list` shows next to the id. Pass it whenever you know who the person is.
 - Inviting someone doesn't change who you are on this computer. Once they've connected, reach them with `--to alice`.
+
+## In a run that listen started
+
+When `listen` started you for a conversation, your own reading and answering in that conversation runs without asking anyone:
+
+| Command, for that conversation | Flags that still run without asking |
+|---|---|
+| `inbox show conv_123` | `--limit`, `--before`, `--json` |
+| `inbox read conv_123`, `inbox resolve conv_123` | `--json` |
+| `inbox reply conv_123 …`, with `ask`, `approve` or `choose` too | `--from`, `--ttl`, `--timeout`, `--async`, `--option`, `--approve-label`, `--deny-label`, `--extra-action`, `--icon`, `--subtitle`, `--body`, `--json` |
+
+```bash
+npx @agentinbox/cli inbox show conv_123 --json
+npx @agentinbox/cli inbox reply conv_123 choose "Deploy the fix?" --option prd:Production --option stg:Staging
+npx @agentinbox/cli inbox reply conv_123 "It's on staging." && npx @agentinbox/cli inbox resolve conv_123
+```
+
+- `npx @agentinbox/cli` with or without `-y` or `--yes`, a pinned `@agentinbox/cli@<version>`, and an installed `agentinbox` all count. Several of these commands joined with `&&` are fine.
+- The operator is asked first for `--to`, `--anyone`, `--via`, `--api-url`, `--`, any other flag, a flag before the conversation id, another conversation, `inbox send`, and commands joined by anything other than `&&`, such as a pipe, `;` or a redirection.
+- An answer to one of your questions that no waiting command takes, such as an `--async` one or one whose command timed out, comes back to the conversation you asked in, whoever gave it, also someone outside it you asked with `--to`: it joins the run going on, or goes on with this conversation's session in a new run.

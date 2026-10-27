@@ -81,8 +81,8 @@ Cursor, GitHub Copilot, VS Code and the other [Agent Plugins clients](https://ag
 
 | Skill | What it's for |
 | --- | --- |
-| `agentinbox` | Ask a person and wait for the answer: questions, approvals before anything hard to undo, choices, and a message when a job is done. Read and answer the conversations people start with the agent, and reach other contacts. |
-| `agentinbox-cli` | Set up and script `npx @agentinbox/cli`: setup and login, by the operator or by an agent they ask, connecting a computer with a one-time code, channels, CI and sandboxes, exit codes, and what each error means. |
+| `agentinbox` | Ask a person and wait for the answer: questions, approvals before anything hard to undo, choices, and a message when a job is done. Read and answer the conversations people start with the agent, also in a run their message started, and reach other contacts. |
+| `agentinbox-cli` | Set up and script `npx @agentinbox/cli`: setup and login, by the operator or by an agent they ask, connecting a computer with a one-time code, channels, listening for messages so that one starts Claude Code on a computer, CI and sandboxes, exit codes, and what each error means. |
 | `agentinbox-mcp` | Connect Claude, ChatGPT, Cursor, Claude Code, Codex, OpenCode or another app to the hosted MCP server, finish setting up from the app, and fix that connection. |
 
 ## What's where
@@ -143,7 +143,7 @@ See [evals/README.md](evals/README.md) for what each case checks.
 The plugin has no hooks or scripts. Everything happens when the agent calls an inbox tool or runs a command a skill gives it:
 
 - **The Agent Inbox MCP server**, `https://mcp.agentinbox.md`. The agent's tool calls go there, such as a message to send or a conversation to read, with the sign-in you approved. The server acts on your Agent Inbox account, and the account's key never leaves it.
-- **The Agent Inbox CLI**, when the agent runs `npx @agentinbox/cli`. npm downloads the package the first time. The CLI talks only to the Agent Inbox API at `https://www.agentinbox.md/api`, and keeps the account's key in `~/.agentinbox/config.json`.
+- **The Agent Inbox CLI**, when the agent runs `npx @agentinbox/cli`. npm downloads the package the first time. The CLI talks only to the Agent Inbox API at `https://www.agentinbox.md/api`, and keeps the account's key in `~/.agentinbox/config.json`. With `listen claude-code`, once the operator allows it, a background program stays on the computer: it waits on that API, and starts the operator's own Claude Code in the project when a message comes.
 - **The people the agent reaches.** Its messages go out on Telegram, Slack or email, wherever each contact connected, and their answers come back the same way.
 
 ## License

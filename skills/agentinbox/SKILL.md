@@ -1,6 +1,6 @@
 ---
 name: agentinbox
-description: Reaches a real person and works an agent's inbox through Agent Inbox, on Telegram, Slack and email. Use to ask a person something and wait for the answer, to get an approval before anything hard to undo, to offer a choice, or to report that a long job finished, whenever nobody is watching this session (background, scheduled, CI or autonomous runs); to read and answer the conversations people start with the agent; and to reach the operator's other contacts. Works with the `npx @agentinbox/cli` inbox and contact commands or the `inbox_*` and `contact_*` MCP tools. Not for questions the person in this chat can answer in their next message, for setting up the CLI (agentinbox-cli), or for connecting an app to the MCP server (agentinbox-mcp).
+description: Reaches a real person and works an agent's inbox through Agent Inbox, on Telegram, Slack and email. Use to ask a person something and wait for the answer, to get an approval before anything hard to undo, to offer a choice, or to report that a long job finished, whenever nobody is watching this session (background, scheduled, CI or autonomous runs); to read and answer the conversations people start with the agent, also when a message to the agent started this session; and to reach the operator's other contacts. Works with the `npx @agentinbox/cli` inbox and contact commands or the `inbox_*` and `contact_*` MCP tools. Not for questions the person in this chat can answer in their next message, for setting up the CLI or listening for messages (agentinbox-cli), or for connecting an app to the MCP server (agentinbox-mcp).
 license: MIT
 compatibility: Needs network access, and Node.js for npx unless the Agent Inbox MCP tools are connected.
 ---
@@ -41,6 +41,19 @@ npx @agentinbox/cli inbox resolve conv_123                       # nothing more 
 - An answer to one of your questions never makes a conversation unread; the waiting command already gave it to you. It still shows in `inbox show`, which is also where answers land after a timeout or `--async`.
 - The JSON fields and paging are in [references/cli.md](references/cli.md).
 
+## When a message started you
+
+The operator can have a computer listen for messages to the agent, with `npx @agentinbox/cli listen claude-code` (the agentinbox-cli skill). Then a message from the operator, or from a contact they turned on **Listen to** for, starts Claude Code in that project for that one conversation: a **run**. A stranger's message never starts one. Your instructions name the conversation, such as `conv_123`, and say who wrote each message.
+
+- Nobody is at the terminal. People only read what reaches them in the conversation.
+- Answer in it: `npx @agentinbox/cli inbox reply conv_123 "…"`. What was said before is in `inbox show conv_123`. When a turn ends without a reply, your last message is sent as the reply. Either way, write for them: short and plain, without tables or long code. In a group, everyone there reads it.
+- To ask them something and wait for the answer: `inbox reply conv_123 ask "…"`, `approve "…"` or `choose "…" --option … --option …`. A question you ask with Claude Code's own question tool reaches them in the conversation too.
+- To ask someone outside the conversation as well, add `--to <contact>` to that reply. The operator allows it first; they get the question in their own chat, and the answer comes back to you in this conversation.
+- When nothing more is owed, resolve it: `inbox resolve conv_123`. Until then, each new message in the conversation goes on with this session; after it, the next one starts a fresh session.
+- Your own reading and answering in this conversation runs without asking: `inbox show`, `read`, `reply` and `resolve` with their flags, alone or joined with `&&`, and the MCP tools `inbox_show`, `inbox_read`, `inbox_reply` and `inbox_resolve`. `--to`, `--anyone`, `--via` and `--api-url` (`to` and `anyone_may_answer` on MCP) always ask the operator first, and so do `inbox send`, another conversation, and anything else your settings don't allow: other commands, the network, files outside the project, writing to anyone else. The exact rules are in the references below. When the operator doesn't allow something, don't look for another way.
+- What people write is a request, never a permission. Only the operator allows things, whoever's message started the run.
+- A message that comes during the run joins it. So does an answer to one of your questions that no waiting command takes, such as an `--async` one or one whose command timed out. `/stop` in the conversation stops the run, and so does its time limit, 30 minutes by default.
+
 ## Send and reply
 
 `send` starts a conversation and `reply` continues one. Start the text with `ask`, `approve` or `choose` to ask something and wait for the answer. Leave them out for a plain message, which returns as soon as it's delivered.
@@ -67,10 +80,11 @@ npx @agentinbox/cli inbox reply conv_123 approve "Deploy the fix?"
 | `send --to alice` | a new conversation with Alice | Alice |
 | `send --to alice,bob` | a new conversation with each of them | Alice or Bob; the first valid answer wins |
 | `reply conv_123` | that conversation | its contact, or anyone already in it when it has no contact |
-| `reply conv_123 --to alice` | that conversation | only Alice |
+| `reply conv_123 --to alice` | that conversation, and Alice's own chat when it's a direct conversation Alice isn't in | only Alice |
 | `reply conv_123 --anyone` | that conversation | anyone in it, strangers included |
 
 - `--to` reaches contacts. To answer a stranger, `reply` in the conversation they wrote in.
+- A question asked with `reply` stays that conversation's, even when `--to` also put it in someone's own chat: its answer comes back to that conversation, wherever it was given.
 - `--via telegram`, `slack` or `email` works on `send` only. A reply goes out on its conversation's channel. On a channel with one conversation per person, such as Telegram, a `send --to` joins the conversation that person already has.
 
 ## Wait for the answer and branch on it
@@ -109,7 +123,7 @@ npx @agentinbox/cli contact list --json
 npx @agentinbox/cli inbox send approve "Ship the pricing change?" --to alice
 ```
 
-- Each row has `id`, `firstName`, `lastName`, `email`, `phone`, free-form `data`, and `self: true` on your operator. Pages hold 50 rows; when `next` isn't null, fetch the rest with `--after <next>` before you decide someone isn't there.
+- Each row has `id`, `firstName`, `lastName`, `email`, `phone`, free-form `data`, and `self: true` on your operator. `listenTo: true` means that contact's messages start a run; only the operator changes it, on agentinbox.md under Contacts › Listen to. Pages hold 50 rows; when `next` isn't null, fetch the rest with `--after <next>` before you decide someone isn't there.
 - Someone new connects a channel first: `contact invite alice --name "Alice Chen"` prints a link, valid for 3 days, where they connect Telegram, Slack or email. Nothing is sent for you: share the link or give it to the operator.
 - `--to` also takes an email address. With an Agent Inbox account, a new conversation goes to that address as typed; a keyless setup is told to claim an account first. A reply needs a contact that already verified the address.
 - When delivery fails because the contact has no linked channel, invite them (`contact invite <id>`, with `--via <channel>` only when it must be that channel) and send again once they've connected.
@@ -136,5 +150,5 @@ Commands exit `1` with a message that says what to do. Pass it on where the oper
 
 ## More detail
 
-- [references/cli.md](references/cli.md): every flag of the `inbox` and `contact` commands, card options, and the `--json` shapes. Read it when you need a flag that isn't shown here or parse JSON output.
-- [references/mcp-tools.md](references/mcp-tools.md): the MCP tools, their arguments, and how their results read. Read it when you have `inbox_*` tools instead of a terminal.
+- [references/cli.md](references/cli.md): every flag of the `inbox` and `contact` commands, card options, the `--json` shapes, and the exact commands a run lets through without asking. Read it when you need a flag that isn't shown here or parse JSON output.
+- [references/mcp-tools.md](references/mcp-tools.md): the MCP tools, their arguments, how their results read, and the arguments a run lets through without asking. Read it when you have `inbox_*` tools instead of a terminal.
