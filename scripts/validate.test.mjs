@@ -115,6 +115,16 @@ describe('validate', () => {
     assert.match(errorsOf(dir), /mentions "agentinbox-api", which isn't a skill/);
   });
 
+  it('takes the background service of listen for what it is, not a skill', () => {
+    const dir = copyRepo();
+    appendFileSync(
+      join(dir, 'skills/agentinbox-cli/SKILL.md'),
+      '\nmacOS lists it as `agentinbox-listen`, and Linux runs `agentinbox-listen.service`.\n'
+    );
+
+    assert.doesNotMatch(errorsOf(dir), /mentions "agentinbox-listen"/);
+  });
+
   it('rejects manifests that disagree', () => {
     const dir = copyRepo();
     // The marketplace has the plugin's name too, so rename only the plugin's entry.

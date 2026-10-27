@@ -11,6 +11,7 @@ Everything in the skill holds; only the way you call it changes.
 - Waiting for an answer
 - Setting up from the chat
 - Tool arguments
+- In a run that `listen` started
 - What the tools can't do
 
 ## From a command to a tool
@@ -86,7 +87,7 @@ A name never renames an existing agent, and a handle never moves an existing mai
 | `conversation` | The conversation id (`conv_...`) from `inbox_list`. Required |
 | `anyone_may_answer` | Anyone in the conversation may answer, strangers included. Not together with `to` |
 
-A reply goes out on the conversation's own channel.
+A reply goes out on the conversation's own channel. With `to`, only those contacts may answer. One who isn't in a direct conversation gets the question in their own chat as well, and the answer comes back to this conversation, wherever it was given.
 
 **`inbox_wait`** takes the `id` from an earlier result, and `wait_seconds` (default 45, max 50).
 
@@ -109,8 +110,20 @@ A reply goes out on the conversation's own channel.
 
 **`contact_invite`** takes `id` (a short id such as `alice`, which you later pass as `to`) and `name`. It returns a link and sends nothing: give the link to the operator to pass on. It takes no channel. To reach someone by email, put the address in `to` on `inbox_send`: a new address on a send is delivered as typed, while a reply still needs a contact that already verified that address.
 
+## In a run that listen started
+
+When `npx @agentinbox/cli listen` started you for a conversation, these tools of the Agent Inbox server run without asking anyone, on that conversation, with only these arguments:
+
+| Tool | Arguments |
+|---|---|
+| `inbox_show` | `conversation`, `limit`, `before` |
+| `inbox_read`, `inbox_resolve` | `conversation` |
+| `inbox_reply` | `conversation`, `kind`, `message`, `from`, `ttl_seconds`, `wait_seconds`, `icon`, `subtitle`, `body`, `approve_label`, `deny_label`, `extra_actions`, `options` |
+
+`to`, `anyone_may_answer` or any other argument, and another conversation, ask the operator first, as does every other tool your settings don't allow.
+
 ## What the tools can't do
 
-There are no tools for `login`, `connect` or `channel`. Those happen on agentinbox.md or with the CLI on a computer (the agentinbox-cli skill says who runs which), and Telegram and Slack are set up there too.
+There are no tools for `login`, `connect`, `channel` or `listen`. Those happen on agentinbox.md or with the CLI on a computer (the agentinbox-cli skill says who runs which), and Telegram and Slack are set up there too.
 
 When the operator has paused the agent on agentinbox.md, every tool returns an error that says so. Stop retrying and tell whoever you can reach; messages people send meanwhile wait in the inbox.

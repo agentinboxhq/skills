@@ -19,6 +19,8 @@ const REQUIRED_FIELDS = ['name', 'description', 'license'];
 const NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Every skill here is named after the product, so installs next to other vendors' skills don't collide. */
 const NAME_PREFIX = 'agentinbox';
+/** The product's own names that start like a skill's: the background service `listen` installs. */
+const NOT_SKILLS = new Set(['agentinbox-listen']);
 /** Claude rejects these in a skill name. */
 const RESERVED_WORDS = ['anthropic', 'claude'];
 const MAX_NAME_LENGTH = 64;
@@ -318,14 +320,14 @@ function checkDescription(file, description, error) {
 
 /**
  * The skill names a skill's text mentions, such as "the agentinbox-cli skill", must exist. The CLI's package
- * (`@agentinbox/cli`) and the site (`agentinbox.md`) aren't mentions.
+ * (`@agentinbox/cli`), the site (`agentinbox.md`) and the names in NOT_SKILLS aren't mentions.
  */
 function checkSkillMentions(skill, names, error) {
   const mention = new RegExp(`(?<![\\w/.@-])${NAME_PREFIX}(?:-[a-z0-9]+)*\\b(?!\\.md)`, 'g');
   for (const file of skill.files.filter((path) => path.endsWith('.md'))) {
     const text = readFileSync(file, 'utf8');
     for (const match of text.matchAll(mention)) {
-      if (!names.has(match[0])) {
+      if (!names.has(match[0]) && !NOT_SKILLS.has(match[0])) {
         error(file, `mentions "${match[0]}", which isn't a skill in skills/`);
       }
     }
