@@ -1,4 +1,4 @@
 ---
 type: regex
-pattern: 'opencode mcp auth inbox'
+pattern: 'opencode mcp auth AgentInbox'
 ---

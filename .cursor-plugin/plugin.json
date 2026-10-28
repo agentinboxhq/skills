@@ -14,7 +14,7 @@
   "tags": ["human-in-the-loop", "approvals", "inbox", "email", "HITL", "telegram", "slack", "communication", "notifications"],
   "skills": "./skills/",
   "mcpServers": {
-    "inbox": {
+    "AgentInbox": {
       "type": "http",
       "url": "https://mcp.agentinbox.md",
       "placement": "server"

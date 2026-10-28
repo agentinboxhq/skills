@@ -154,7 +154,7 @@ describe('validate', () => {
       manifest.description = 'Ask a person.';
       manifest.logo = './assets/logo.png';
       // Without its placement, Grok Bot never offers to sign in.
-      delete manifest.mcpServers.inbox.placement;
+      delete manifest.mcpServers.AgentInbox.placement;
       manifest.mcpServers.mail = { type: 'http', url: 'https://mail.example.com/mcp' };
 
       return JSON.stringify(manifest);
@@ -167,7 +167,7 @@ describe('validate', () => {
     assert.match(errors, /"logo" must be the plugin's icon, .\/assets\/icon.png/);
     assert.match(
       errors,
-      /"mcpServers.inbox" must be \{ "type": "http", "url": "https:\/\/mcp.agentinbox.md", "placement": "server" \}/
+      /"mcpServers.AgentInbox" must be \{ "type": "http", "url": "https:\/\/mcp.agentinbox.md", "placement": "server" \}/
     );
     assert.match(errors, /"mcpServers.mail" isn't a server in .mcp.json/);
   });
@@ -189,12 +189,12 @@ describe('validate', () => {
     const dir = copyRepo();
     edit(dir, '.mcp.json', (text) => text.replace('https://mcp.agentinbox.md', 'https://mcp.agentinbox.md/mcp'));
 
-    assert.match(errorsOf(dir), /"inbox" points at https:\/\/mcp.agentinbox.md\/mcp, which no SKILL.md gives/);
+    assert.match(errorsOf(dir), /"AgentInbox" points at https:\/\/mcp.agentinbox.md\/mcp, which no SKILL.md gives/);
   });
 
   it('rejects an mcp.json that does not match .mcp.json', () => {
     const dir = copyRepo();
-    edit(dir, 'mcp.json', (text) => text.replace('"inbox"', '"agentinbox"').replace('"streamable-http"', '"http"'));
+    edit(dir, 'mcp.json', (text) => text.replace('"AgentInbox"', '"agentinbox"').replace('"streamable-http"', '"http"'));
 
     const errors = errorsOf(dir);
     assert.match(errors, /"agentinbox" must be a remote server: \{ "type": "streamable-http"/);
@@ -205,12 +205,12 @@ describe('validate', () => {
     const dir = copyRepo();
     edit(dir, 'mcp.json', (text) => {
       const config = JSON.parse(text);
-      config.mcpServers.inbox.extensions = { 'com.openai': { auth: { type: 'oauth' } } };
+      config.mcpServers.AgentInbox.extensions = { 'com.openai': { auth: { type: 'oauth' } } };
 
       return JSON.stringify(config);
     });
 
-    assert.match(errorsOf(dir), /"inbox" has "extensions"; Codex drops a server with more than type, url and headers/);
+    assert.match(errorsOf(dir), /"AgentInbox" has "extensions"; Codex drops a server with more than type, url and headers/);
   });
 
   it('rejects a Codex listing that disagrees with the plugin or that Codex would cut short', () => {
@@ -278,12 +278,12 @@ describe('validate', () => {
 
   it('rejects an eval mock for a server or a tool the plugin does not have', () => {
     const dir = copyRepo();
-    writeFileSync(join(dir, 'evals/mocks/inbox/inbox_archive.md'), 'Archived.\n');
+    writeFileSync(join(dir, 'evals/mocks/AgentInbox/inbox_archive.md'), 'Archived.\n');
     mkdirSync(join(dir, 'evals/agentinbox/tell-me-when-done/mocks/agentinbox'), { recursive: true });
     writeFileSync(join(dir, 'evals/agentinbox/tell-me-when-done/mocks/agentinbox/inbox_send.md'), 'Delivered.\n');
 
     const errors = errorsOf(dir);
-    assert.match(errors, /inbox_archive.md: answers "inbox_archive", which isn't a tool in evals\/mocks\/inbox\/_tools.json/);
+    assert.match(errors, /inbox_archive.md: answers "inbox_archive", which isn't a tool in evals\/mocks\/AgentInbox\/_tools.json/);
     assert.match(errors, /mocks\/agentinbox: stands in for "agentinbox", which isn't a server in .mcp.json/);
   });
 
