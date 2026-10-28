@@ -135,6 +135,7 @@ const YAML_INDICATORS = '-?:,[]{}#&*!|>\'"%@`';
  */
 const DENYLIST = [
   ['the removed `skill install` command', /\bskill install\b/],
+  ['the removed `inbox` group: `inbox send` is `send` now', /(?:@agentinbox\/cli |agentinbox |`)inbox (?:list|show|read|resolve|send|reply)\b/],
   ['the old CLI name `human`', /\bnpx human\b|`human (?:setup|login|connect|inbox|contact|channel|ask|approve|choose)\b/],
   ['"thread": say "conversation"', /\bthreads?\b/i],
   ['"subscriber" or "recipient": say "contact"', /\b(?:subscribers?|recipients?)\b/i],

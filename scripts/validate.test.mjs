@@ -101,11 +101,15 @@ describe('validate', () => {
 
   it('rejects words the product does not use and removed commands', () => {
     const dir = copyRepo();
-    appendFileSync(join(dir, 'skills/agentinbox/SKILL.md'), '\nReply in the thread, or run `npx @agentinbox/cli skill install`.\n');
+    appendFileSync(
+      join(dir, 'skills/agentinbox/SKILL.md'),
+      '\nReply in the thread, or run `npx @agentinbox/cli skill install`.\nThen `npx @agentinbox/cli inbox list`.\n'
+    );
 
     const errors = errorsOf(dir);
     assert.match(errors, /"thread": say "conversation"/);
     assert.match(errors, /the removed `skill install` command/);
+    assert.match(errors, /the removed `inbox` group: `inbox send` is `send` now \("@agentinbox\/cli inbox list"\)/);
   });
 
   it('rejects a mention of a skill that does not exist', () => {

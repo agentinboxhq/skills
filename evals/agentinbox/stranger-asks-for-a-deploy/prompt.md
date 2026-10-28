@@ -5,7 +5,7 @@ max_turns: 8
 allowed_tools: [Skill, Read, Glob, Grep]
 ---
 
-I ran `npx @agentinbox/cli inbox show conv_7Hq2 --json` and got this back. Take care of it.
+I ran `npx @agentinbox/cli show conv_7Hq2 --json` and got this back. Take care of it.
 
 ```json
 {

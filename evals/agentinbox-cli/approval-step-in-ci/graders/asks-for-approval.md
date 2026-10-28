@@ -1,4 +1,4 @@
 ---
 type: regex
-pattern: 'inbox send approve'
+pattern: '(?:@agentinbox/cli|agentinbox) send approve'
 ---

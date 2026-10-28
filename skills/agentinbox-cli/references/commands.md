@@ -1,6 +1,6 @@
 # Setup, login, connect, channel and listen commands
 
-Every flag of the commands that set Agent Inbox up. Commands start with `npx @agentinbox/cli`. The `inbox` and `contact` commands are in the agentinbox skill.
+Every flag of the commands that set Agent Inbox up. Commands start with `npx @agentinbox/cli`. The conversation and `contact` commands are in the agentinbox skill.
 
 ## Contents
 
@@ -118,7 +118,7 @@ While the agent is paused, it doesn't stop: it waits, and runs start again once 
 
 ## How the terminal screen looks
 
-On a terminal, `setup`, `login`, `connect`, `channel add` and `listen claude-code` draw one screen and update it in place: the agent's mascot, the command, the steps done, and what it's waiting for. Pipes, CI, `NO_COLOR`, `FORCE_COLOR=0`, `TERM=dumb` and terminals narrower than 48 columns get plain text instead, so what agents read stays the same. `inbox`, `contact`, `listen status` and `listen stop` always print plain text.
+On a terminal, `setup`, `login`, `connect`, `channel add` and `listen claude-code` draw one screen and update it in place: the agent's mascot, the command, the steps done, and what it's waiting for. Pipes, CI, `NO_COLOR`, `FORCE_COLOR=0`, `TERM=dumb` and terminals narrower than 48 columns get plain text instead, so what agents read stays the same. The conversation commands, `contact`, `listen status` and `listen stop` always print plain text.
 
 | Variable | Effect |
 |---|---|
