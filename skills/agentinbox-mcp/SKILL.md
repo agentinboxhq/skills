@@ -33,7 +33,7 @@ The person signs in with their Agent Inbox account when the app asks, and approv
 ```json
 {
   "mcpServers": {
-    "inbox": { "url": "https://mcp.agentinbox.md" }
+    "AgentInbox": { "url": "https://mcp.agentinbox.md" }
   }
 }
 ```
@@ -43,7 +43,7 @@ The first time Cursor uses the inbox, it opens the sign-in window.
 **Claude Code**: the Agent Inbox plugin comes with the server (`/plugin marketplace add agentinboxhq/skills`, then `/plugin install agentinbox@agentinbox`), listed as `plugin:agentinbox:inbox`. Without the plugin, add it:
 
 ```bash
-claude mcp add --transport http inbox https://mcp.agentinbox.md
+claude mcp add --transport http AgentInbox https://mcp.agentinbox.md
 ```
 
 Either way, run `/mcp` in a session and authenticate it in the browser. Don't add it by hand next to the plugin, or every tool shows up twice.
@@ -53,18 +53,24 @@ Either way, run `/mcp` in a session and authenticate it in the browser. Don't ad
 ```bash
 codex plugin marketplace add agentinboxhq/skills
 codex plugin add agentinbox@agentinbox    # or install it from /plugins in Codex
-codex mcp login inbox
+codex mcp login AgentInbox
 ```
 
-`codex mcp login inbox` opens the sign-in in the browser. Without the plugin, add the server with `codex mcp add inbox --url https://mcp.agentinbox.md` and sign in the same way; use one or the other, not both.
+`codex mcp login AgentInbox` opens the sign-in in the browser. Without the plugin, add the server with `codex mcp add AgentInbox --url https://mcp.agentinbox.md` and sign in the same way; use one or the other, not both.
 
-**OpenCode**: add the server to `opencode.json` in the project, or to `~/.config/opencode/opencode.json` for every project:
+**OpenCode**: run this in the project, or add `--global` to add it for every project:
+
+```bash
+opencode mcp add AgentInbox --url https://mcp.agentinbox.md
+```
+
+Or add the server to `opencode.json` yourself, in the project or in `~/.config/opencode/opencode.json` for every project:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "inbox": {
+    "AgentInbox": {
       "type": "remote",
       "url": "https://mcp.agentinbox.md"
     }
@@ -72,13 +78,13 @@ codex mcp login inbox
 }
 ```
 
-Then run `opencode mcp auth inbox` and sign in in the browser. `opencode mcp list` shows whether it's signed in.
+Then run `opencode mcp auth AgentInbox` and sign in in the browser. `opencode mcp list` shows whether it's signed in.
 
 **Any other client** that supports remote MCP servers over HTTP with OAuth sign-in: add `https://mcp.agentinbox.md` with no headers and no API key, then finish the sign-in in the browser.
 
 ## Check that it works
 
-- The app now has tools named `inbox_send`, `inbox_list` and so on, sometimes with the server's name in front (`mcp__inbox__inbox_list`, `mcp__plugin_agentinbox_inbox__inbox_list` from the Claude Code plugin, or `inbox_inbox_list` in OpenCode).
+- The app now has tools named `inbox_send`, `inbox_list` and so on, sometimes with the server's name in front (`mcp__AgentInbox__inbox_list`, `mcp__plugin_agentinbox_AgentInbox__inbox_list` from the Claude Code plugin, or `AgentInbox_inbox_list` in OpenCode).
 - Ask it to call `inbox_list`. It only reads, so it's a safe first call.
 - agentinbox.md shows the app as connected, and when each app or computer last checked the inbox.
 

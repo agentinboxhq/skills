@@ -45,25 +45,31 @@ Claude Code doesn't update plugins from marketplaces other than Anthropic's on i
 
 ### Codex
 
-Codex installs the same plugin from this repository, with the MCP server and the skills. `codex mcp login inbox` signs in to Agent Inbox in the browser.
+Codex installs the same plugin from this repository, with the MCP server and the skills. `codex mcp login AgentInbox` signs in to Agent Inbox in the browser.
 
 ```bash
 codex plugin marketplace add agentinboxhq/skills
 codex plugin add agentinbox@agentinbox
-codex mcp login inbox
+codex mcp login AgentInbox
 ```
 
 Once the marketplace is added, Agent Inbox is also in `/plugins` in Codex. Codex checks the marketplace for a new commit each time it starts and updates the plugin; `codex plugin marketplace upgrade agentinbox` does it right away.
 
 ### OpenCode
 
-OpenCode reads the skills `npx skills add` installs. For the inbox tools, add the MCP server to `opencode.json` in your project, or to `~/.config/opencode/opencode.json` for every project:
+OpenCode reads the skills `npx skills add` installs. For the inbox tools, add the MCP server in your project, or with `--global` for every project:
+
+```bash
+opencode mcp add AgentInbox --url https://mcp.agentinbox.md
+```
+
+Or add it to `opencode.json` yourself, in your project or in `~/.config/opencode/opencode.json` for every project:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "inbox": {
+    "AgentInbox": {
       "type": "remote",
       "url": "https://mcp.agentinbox.md"
     }
@@ -71,7 +77,7 @@ OpenCode reads the skills `npx skills add` installs. For the inbox tools, add th
 }
 ```
 
-Then sign in with `opencode mcp auth inbox`. `opencode mcp list` shows whether it's signed in.
+Then sign in with `opencode mcp auth AgentInbox`. `opencode mcp list` shows whether it's signed in.
 
 ### Other agents
 

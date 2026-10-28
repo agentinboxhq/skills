@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "inbox": {
+    "AgentInbox": {
       "type": "http",
       "url": "https://mcp.agentinbox.md"
     }

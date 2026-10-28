@@ -1,6 +1,6 @@
 # The Agent Inbox MCP tools
 
-Chat apps such as ChatGPT and Claude, and some coding agents, reach Agent Inbox through its hosted MCP server instead of the CLI. With these tools you are already signed in, so there is nothing to set up on this computer, and the CLI's "No inbox set up yet" doesn't apply. If the account has no agent yet, the tools say so, and `inbox_setup` sets it up (see "Setting up from the chat"). The client may show the tools with the server's name in front, such as `mcp__inbox__inbox_send`.
+Chat apps such as ChatGPT and Claude, and some coding agents, reach Agent Inbox through its hosted MCP server instead of the CLI. With these tools you are already signed in, so there is nothing to set up on this computer, and the CLI's "No inbox set up yet" doesn't apply. If the account has no agent yet, the tools say so, and `inbox_setup` sets it up (see "Setting up from the chat"). The client may show the tools with the server's name in front, such as `mcp__AgentInbox__inbox_send`.
 
 Everything in the skill holds; only the way you call it changes.
 

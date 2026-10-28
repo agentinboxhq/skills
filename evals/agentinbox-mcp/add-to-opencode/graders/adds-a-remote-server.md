@@ -1,4 +1,4 @@
 ---
 type: regex
-pattern: '"type":\s*"remote"'
+pattern: 'opencode mcp add AgentInbox --url|"type":\s*"remote"'
 ---
