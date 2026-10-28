@@ -19,14 +19,14 @@ Everything in the skill holds; only the way you call it changes.
 | CLI | MCP tool |
 |---|---|
 | `setup` (the agent and its email inbox) | `inbox_setup` with `agent_name` and `handle`, then `email` |
-| `inbox send <text>` | `inbox_send` without a `kind` |
-| `inbox send ask\|approve\|choose <text>` | `inbox_send` with `kind` set to `ask`, `approve` or `choose` |
-| `inbox reply <conversation> …` | `inbox_reply` with `conversation`, and `kind` the same way |
-| `inbox list`, `show`, `read`, `resolve` | `inbox_list`, `inbox_show`, `inbox_read`, `inbox_resolve` |
+| `send <text>` | `inbox_send` without a `kind` |
+| `send ask\|approve\|choose <text>` | `inbox_send` with `kind` set to `ask`, `approve` or `choose` |
+| `reply <conversation> …` | `inbox_reply` with `conversation`, and `kind` the same way |
+| `list`, `show`, `read`, `resolve` | `inbox_list`, `inbox_show`, `inbox_read`, `inbox_resolve` |
 | `contact list --after <next>` | `contact_list` with `after` |
 | `contact invite <id> --name "…"` | `contact_invite` with `id` and `name` |
 | `--to`, `--via`, `--from`, `--option`, `--anyone`, `--ttl 2h` | `to`, `via`, `from`, `options`, `anyone_may_answer`, `ttl_seconds: 7200` |
-| `inbox list --wait --timeout 25s` | `inbox_list` with `wait_seconds: 25` (25 at most) |
+| `list --wait --timeout 25s` | `inbox_list` with `wait_seconds: 25` (25 at most) |
 
 Before you send, call `inbox_list` with `filter: "unread"`. Someone may already have written to you, and you should reply in that conversation instead of starting a new one.
 

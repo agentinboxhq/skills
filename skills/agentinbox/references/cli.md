@@ -1,18 +1,18 @@
-# Inbox and contact commands
+# Conversation and contact commands
 
 Every flag of the commands an agent uses, and what `--json` prints. Commands start with `npx @agentinbox/cli`.
 
 ## Contents
 
-- `inbox list`
-- `inbox show`, `inbox read`, `inbox resolve`
-- `inbox send` and `inbox reply`
+- `list`
+- `show`, `read`, `resolve`
+- `send` and `reply`
 - Cards and buttons
 - What `--json` prints
 - `contact list` and `contact invite`
 - In a run that `listen` started
 
-## inbox list
+## list
 
 Open conversations with contacts, newest first, unless you filter.
 
@@ -27,23 +27,23 @@ Open conversations with contacts, newest first, unless you filter.
 | `--after <cursor>` | Continue from the `next` cursor of the previous page |
 | `--json` | Print `{ data, next }` |
 
-## inbox show, inbox read, inbox resolve
+## show, read, resolve
 
 ```bash
-npx @agentinbox/cli inbox show conv_123 [--limit <n>] [--before <messageId>] [--json]
-npx @agentinbox/cli inbox read conv_123
-npx @agentinbox/cli inbox resolve conv_123
+npx @agentinbox/cli show conv_123 [--limit <n>] [--before <messageId>] [--json]
+npx @agentinbox/cli read conv_123
+npx @agentinbox/cli resolve conv_123
 ```
 
 - `show` lists messages oldest first: 20 by default, max 100. `--before` pages to older messages. It doesn't mark the conversation read.
 - `read` marks the conversation read. Nothing is sent.
 - `resolve` marks it finished. Nothing is sent, and it opens again when anyone writes in it.
 
-## inbox send and inbox reply
+## send and reply
 
 ```bash
-npx @agentinbox/cli inbox send [ask|approve|choose] <text...>
-npx @agentinbox/cli inbox reply <conversation> [ask|approve|choose] <text...>
+npx @agentinbox/cli send [ask|approve|choose] <text...>
+npx @agentinbox/cli reply <conversation> [ask|approve|choose] <text...>
 ```
 
 | Flag | Meaning |
@@ -72,13 +72,13 @@ Durations look like `90s`, `10m`, `2h` or `1d`.
 | `--option <label>` | `choose` only: one option, 2 to 10. `id:label` keeps a stable id, such as `--option stg:Staging` |
 
 ```bash
-npx @agentinbox/cli inbox send approve "Issue the refund?" \
+npx @agentinbox/cli send approve "Issue the refund?" \
   --icon stripe \
   --subtitle "issue_refund: ORD-42" \
   --body 'Refund $25.00' \
   --extra-action trust-tool:"Always allow this tool"
 
-npx @agentinbox/cli inbox send choose "Which environment?" \
+npx @agentinbox/cli send choose "Which environment?" \
   --option stg:Staging \
   --option prd:Production \
   --subtitle "This cannot be undone"
@@ -86,7 +86,7 @@ npx @agentinbox/cli inbox send choose "Which environment?" \
 
 ## What --json prints
 
-**`inbox list`** prints `{ data, next }`. Each conversation in `data` has:
+**`list`** prints `{ data, next }`. Each conversation in `data` has:
 
 - `id`, `channel`, and `kind`: `contact` or `stranger`
 - `people`: each with `id`, `name` and `kind`
@@ -96,7 +96,7 @@ npx @agentinbox/cli inbox send choose "Which environment?" \
 
 When `next` isn't null, pass it to `--after` for the next page.
 
-**`inbox show`** prints `{ conversation, messages, hasMore }`. Each message has:
+**`show`** prints `{ conversation, messages, hasMore }`. Each message has:
 
 - `from`: `human` for a person, `agent` or `system`
 - `senderKind`: `contact` or `stranger`, on messages from a person
@@ -105,7 +105,7 @@ When `next` isn't null, pass it to `--after` for the next page.
 
 When `hasMore` is true, page back with `--before <messages[0].id>`.
 
-**`inbox send` and `inbox reply`** print the interaction:
+**`send` and `reply`** print the interaction:
 
 - `id`, and `kind`: `ask`, `approve`, `choose`, or `tell` for a plain message
 - `status`: `pending`, `answered`, `approved`, `denied`, `expired`, `canceled` or `delivered`
@@ -134,16 +134,16 @@ When `listen` started you for a conversation, your own reading and answering in 
 
 | Command, for that conversation | Flags that still run without asking |
 |---|---|
-| `inbox show conv_123` | `--limit`, `--before`, `--json` |
-| `inbox read conv_123`, `inbox resolve conv_123` | `--json` |
-| `inbox reply conv_123 …`, with `ask`, `approve` or `choose` too | `--from`, `--ttl`, `--timeout`, `--async`, `--option`, `--approve-label`, `--deny-label`, `--extra-action`, `--icon`, `--subtitle`, `--body`, `--json` |
+| `show conv_123` | `--limit`, `--before`, `--json` |
+| `read conv_123`, `resolve conv_123` | `--json` |
+| `reply conv_123 …`, with `ask`, `approve` or `choose` too | `--from`, `--ttl`, `--timeout`, `--async`, `--option`, `--approve-label`, `--deny-label`, `--extra-action`, `--icon`, `--subtitle`, `--body`, `--json` |
 
 ```bash
-npx @agentinbox/cli inbox show conv_123 --json
-npx @agentinbox/cli inbox reply conv_123 choose "Deploy the fix?" --option prd:Production --option stg:Staging
-npx @agentinbox/cli inbox reply conv_123 "It's on staging." && npx @agentinbox/cli inbox resolve conv_123
+npx @agentinbox/cli show conv_123 --json
+npx @agentinbox/cli reply conv_123 choose "Deploy the fix?" --option prd:Production --option stg:Staging
+npx @agentinbox/cli reply conv_123 "It's on staging." && npx @agentinbox/cli resolve conv_123
 ```
 
 - `npx @agentinbox/cli` with or without `-y` or `--yes`, a pinned `@agentinbox/cli@<version>`, and an installed `agentinbox` all count. Several of these commands joined with `&&` are fine.
-- The operator is asked first for `--to`, `--anyone`, `--via`, `--api-url`, `--`, any other flag, a flag before the conversation id, another conversation, `inbox send`, and commands joined by anything other than `&&`, such as a pipe, `;` or a redirection.
+- The operator is asked first for `--to`, `--anyone`, `--via`, `--api-url`, `--`, any other flag, a flag before the conversation id, another conversation, `send`, and commands joined by anything other than `&&`, such as a pipe, `;` or a redirection.
 - An answer to one of your questions that no waiting command takes, such as an `--async` one or one whose command timed out, comes back to the conversation you asked in, whoever gave it, also someone outside it you asked with `--to`: it joins the run going on, or goes on with this conversation's session in a new run.

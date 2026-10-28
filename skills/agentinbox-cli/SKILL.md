@@ -7,14 +7,14 @@ compatibility: Needs Node.js for npx, and network access to agentinbox.md.
 
 # Agent Inbox CLI
 
-`npx @agentinbox/cli` runs the CLI with nothing installed first; `npm install -g @agentinbox/cli` installs it as `agentinbox`. Every command is `<command> <action>`: `setup`, `login`, `connect`, `inbox`, `contact`, `channel`, `listen`.
+`npx @agentinbox/cli` runs the CLI with nothing installed first; `npm install -g @agentinbox/cli` installs it as `agentinbox`. The conversation commands stand alone: `list`, `show`, `read`, `resolve`, `send`, `reply`. `contact` and `channel` take an action, as in `contact list`. The rest are `setup`, `login`, `connect` and `listen`.
 
-How an agent uses `inbox` and `contact` to ask people things and answer conversations is the agentinbox skill. This skill is about getting the CLI working on a computer or in automation.
+How an agent uses the conversation and `contact` commands to ask people things and answer conversations is the agentinbox skill. This skill is about getting the CLI working on a computer or in automation.
 
 ## Who runs what
 
 - **The operator** (the person the agent works for) runs `setup`, `login` and `channel add`, or asks an agent to set up for them, and changes settings on agentinbox.md: who can reach the agent, whose messages start a run (**Listen to**), pausing it, the API key.
-- **An agent** runs `inbox` and `contact` commands, and `connect` with a one-time code the operator gave it.
+- **An agent** runs the conversation and `contact` commands, and `connect` with a one-time code the operator gave it.
 - An agent may run `setup` (with `--email` and `--name`) and `login` when its operator asks it to, and the operator approves the login on agentinbox.md. See "Set up for your operator".
 - An agent may run `listen claude-code` when its operator asks it to, and the operator allows it on their channel. See "Listen for messages".
 - An agent never asks for a Telegram bot token or a Slack token. When the host refuses to save the key, tell the operator the command to run instead.
@@ -66,7 +66,7 @@ npx @agentinbox/cli connect atlas --code BCDF-GHJK
 - `atlas` is the agent's address before the `@`. The code works once, for 10 minutes. A used, expired or wrong code exits `1` and says which; ask for a new code instead of guessing, because the agent stops taking codes for a while after a few wrong ones.
 - Keep `--api-url` when the command has it: a code only works on the API that made it.
 - When this computer already has a setup, `connect` stops and asks before replacing it, and without a terminal it needs `--yes`. Commands copied from agentinbox.md already have `--yes`, because the operator wrote them. Otherwise tell the operator first, and add `--yes` only once they agree.
-- After `connect`, every command on this computer acts as that agent. Check with `npx @agentinbox/cli inbox list`.
+- After `connect`, every command on this computer acts as that agent. Check with `npx @agentinbox/cli list`.
 - For Claude Code, `connect` ends by offering `listen claude-code` as an optional last step. Run it only when the operator wants a message to start Claude Code on this computer; see "Listen for messages".
 
 ## Listen for messages
@@ -112,7 +112,7 @@ To make a pipeline step wait for a person, ask and let the exit code decide:
   env:
     INBOX_SECRET_KEY: ${{ secrets.INBOX_SECRET_KEY }}
     INBOX_TO: alice
-  run: npx @agentinbox/cli inbox send approve "Deploy ${{ github.sha }} to production?" --ttl 1h --timeout 30m --from ci
+  run: npx @agentinbox/cli send approve "Deploy ${{ github.sha }} to production?" --ttl 1h --timeout 30m --from ci
 ```
 
 Keep the key in the CI system's secret store, never in the repository or a command line others can read.
