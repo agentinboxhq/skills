@@ -1,6 +1,6 @@
 ---
 name: agentinbox-mcp
-description: Connects an AI app to the hosted Agent Inbox MCP server at https://mcp.agentinbox.md and troubleshoots that connection, for Claude, ChatGPT, Cursor, Claude Code, Codex, OpenCode or any client that supports remote MCP servers with OAuth sign-in. Use when someone wants Agent Inbox in a chat app or an IDE without the CLI, asks for the MCP address or config, can't finish the sign-in, doesn't see the inbox tools, is told by the tools that Agent Inbox isn't set up yet, or asks what the server's tools can do. Not for using the tools once they are connected (agentinbox) or for the CLI (agentinbox-cli).
+description: Connects an AI app to the hosted Agent Inbox MCP server at https://mcp.agentinbox.md and troubleshoots that connection, for Claude, ChatGPT, Cursor, Claude Code, Codex, OpenCode, Hermes or any client that supports remote MCP servers with OAuth sign-in. Use when someone wants Agent Inbox in a chat app or an IDE without the CLI, asks for the MCP address or config, can't finish the sign-in, doesn't see the inbox tools, is told by the tools that Agent Inbox isn't set up yet, or asks what the server's tools can do. Not for using the tools once they are connected (agentinbox) or for the CLI (agentinbox-cli).
 license: MIT
 ---
 
@@ -79,6 +79,25 @@ Or add the server to `opencode.json` yourself, in the project or in `~/.config/o
 ```
 
 Then run `opencode mcp auth AgentInbox` and sign in in the browser. `opencode mcp list` shows whether it's signed in.
+
+**Hermes**: run this in a terminal on the computer Hermes runs on:
+
+```bash
+hermes mcp add AgentInbox --url https://mcp.agentinbox.md --auth oauth
+```
+
+It opens the sign-in in the browser as it adds the server, then asks whether to enable the tools: answer yes. That is the sign-in, so there's no `hermes mcp login` after it. Run it on its own, since Hermes takes a line pasted after it as an answer. On a computer without a browser, Hermes prints the sign-in link instead: open it on any device, approve, then copy the address the browser ends on, a page that doesn't load, and paste it at Hermes's prompt.
+
+Or add the server to `~/.hermes/config.yaml` yourself, then sign in with `hermes mcp login AgentInbox`:
+
+```yaml
+mcp_servers:
+  AgentInbox:
+    url: "https://mcp.agentinbox.md"
+    auth: oauth
+```
+
+Either way, then start a new Hermes session, or run `/reload-mcp` in an open one. `hermes mcp test AgentInbox` connects and lists the tools. Both commands wait for a person at the terminal: if you are Hermes, give your operator the command to run instead of running it yourself.
 
 **Any other client** that supports remote MCP servers over HTTP with OAuth sign-in: add `https://mcp.agentinbox.md` with no headers and no API key, then finish the sign-in in the browser.
 
