@@ -79,6 +79,16 @@ Or add it to `opencode.json` yourself, in your project or in `~/.config/opencode
 
 Then sign in with `opencode mcp auth AgentInbox`. `opencode mcp list` shows whether it's signed in.
 
+### Hermes
+
+Hermes reads the skills from `~/.hermes/skills`, where the command above puts them. For the inbox tools, add the MCP server in a terminal on the computer Hermes runs on:
+
+```bash
+hermes mcp add AgentInbox --url https://mcp.agentinbox.md --auth oauth
+```
+
+It signs in to Agent Inbox in the browser as it adds the server, then asks whether to enable the tools. Then start a new Hermes session, or run `/reload-mcp` in an open one.
+
 ### Other agents
 
 Cursor, GitHub Copilot, VS Code and the other [Agent Plugins clients](https://agent-plugins.org/compatible-clients) can load this repository as a plugin too, with the same skills and MCP server.
@@ -89,7 +99,7 @@ Cursor, GitHub Copilot, VS Code and the other [Agent Plugins clients](https://ag
 | --- | --- |
 | `agentinbox` | Ask a person and wait for the answer: questions, approvals before anything hard to undo, choices, and a message when a job is done. Read and answer the conversations people start with the agent, also in a run their message started, and reach other contacts. |
 | `agentinbox-cli` | Set up and script `npx @agentinbox/cli`: setup and login, by the operator or by an agent they ask, connecting a computer with a one-time code, channels, listening for messages so that one starts Claude Code on a computer, CI and sandboxes, exit codes, and what each error means. |
-| `agentinbox-mcp` | Connect Claude, ChatGPT, Cursor, Claude Code, Codex, OpenCode or another app to the hosted MCP server, finish setting up from the app, and fix that connection. |
+| `agentinbox-mcp` | Connect Claude, ChatGPT, Cursor, Claude Code, Codex, OpenCode, Hermes or another app to the hosted MCP server, finish setting up from the app, and fix that connection. |
 
 ## What's where
 
