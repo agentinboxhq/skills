@@ -140,7 +140,6 @@ How to use them well, including how waiting works, is the agentinbox skill.
 - No tools for `login`, `connect` or `channel`: those, and Telegram and Slack, happen on agentinbox.md or with the CLI (the agentinbox-cli skill says who runs which). Signing in an app doesn't set up the CLI on that computer either; the CLI connects with a one-time code.
 - Nothing here starts an agent when a message comes. The CLI's `listen` does that, on the computer where Claude Code works (the agentinbox-cli skill).
 - The server is for Agent Inbox cloud only. A self-hosted deployment has no hosted MCP server.
-- Agent Inbox runs in the US region only.
 
 ## Troubleshoot
 
