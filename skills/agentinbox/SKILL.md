@@ -125,7 +125,7 @@ npx @agentinbox/cli send approve "Ship the pricing change?" --to alice
 
 - Each row has `id`, `firstName`, `lastName`, `email`, `phone`, free-form `data`, and `self: true` on your operator. `listenTo: true` means that contact's messages start a run; only the operator changes it, on agentinbox.md under Contacts › Listen to. Pages hold 50 rows; when `next` isn't null, fetch the rest with `--after <next>` before you decide someone isn't there.
 - Someone new connects a channel first: `contact invite alice --name "Alice Chen"` prints a link, valid for 3 days, where they connect Telegram, Slack or email. Nothing is sent for you: share the link or give it to the operator.
-- `--to` also takes an email address. With an Agent Inbox account, a new conversation goes to that address as typed; a keyless setup is told to claim an account first. A reply needs a contact that already verified the address.
+- `--to` also takes an email address. With an Agent Inbox account, a new conversation goes to that address as typed; a keyless setup is told to claim an account first. A reply needs a contact that already confirmed the address.
 - When delivery fails because the contact has no linked channel, invite them (`contact invite <id>`, with `--via <channel>` only when it must be that channel) and send again once they've connected.
 - Never invent a contact id, and never message your operator (`self`) as if they were someone else.
 
