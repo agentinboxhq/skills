@@ -18,7 +18,7 @@ Every flag of the commands that set Agent Inbox up. Commands start with `npx @ag
 npx @agentinbox/cli setup [telegram|slack|email]
 ```
 
-Creates the agent's inbox without an account (a keyless setup), or in the account the computer is logged in to, then offers to connect Telegram or Slack. `email` verifies the operator's address on an account.
+Creates the agent's inbox without an account (a keyless setup), or in the account the computer is logged in to, then offers to connect Telegram or Slack. `email` confirms the operator's address on an account.
 
 | Flag | Meaning |
 |---|---|

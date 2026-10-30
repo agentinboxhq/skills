@@ -59,7 +59,7 @@ npx @agentinbox/cli reply <conversation> [ask|approve|choose] <text...>
 
 Durations look like `90s`, `10m`, `2h` or `1d`.
 
-`--to` takes contact ids from `contact list`, or an email address. With an Agent Inbox account, a new conversation goes to the address as typed. A reply needs a contact that already verified that address.
+`--to` takes contact ids from `contact list`, or an email address. With an Agent Inbox account, a new conversation goes to the address as typed. A reply needs a contact that already confirmed that address.
 
 ## Cards and buttons
 
@@ -123,8 +123,8 @@ npx @agentinbox/cli contact invite <id|email> [--name "Alice Chen"] [--via <chan
 - `contact list` pages hold 50 contacts (max 100). `--json` prints `{ data, next }`; your operator's row has `self: true`.
 - `contact invite alice --name "Alice Chen"` prints a link to a page, valid for 3 days, where Alice connects Telegram, Slack and/or email and picks her default.
 - `--via telegram` or `--via slack` prints that channel's direct link instead, valid for minutes. It becomes their default channel.
-- An email address instead of an id invites them on email. The contact gets an id from the address (`carol@acme.com` becomes `carol`, with a short suffix when that's taken), and they get a verification email to confirm. `--via email` with `--email <address>` does the same for an id you choose.
-- `--async` prints the link, or sends the verification email, and returns without waiting.
+- An email address instead of an id invites them on email. The contact gets an id from the address (`carol@acme.com` becomes `carol`, with a short suffix when that's taken), and they get a confirmation email. `--via email` with `--email <address>` does the same for an id you choose.
+- `--async` prints the link, or sends the confirmation email, and returns without waiting.
 - `--name` is what `contact list` shows next to the id. Pass it whenever you know who the person is.
 - Inviting someone doesn't change who you are on this computer. Once they've connected, reach them with `--to alice`.
 

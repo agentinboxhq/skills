@@ -108,7 +108,7 @@ A reply goes out on the conversation's own channel. With `to`, only those contac
 
 **`contact_list`** takes `limit` (50, max 100) and `after`. Each line is a contact (id, name, email), and your operator is marked `(you)`. When the result ends with a cursor, call it again with `after` before you decide someone isn't there.
 
-**`contact_invite`** takes `id` (a short id such as `alice`, which you later pass as `to`) and `name`. It returns a link and sends nothing: give the link to the operator to pass on. It takes no channel. To reach someone by email, put the address in `to` on `inbox_send`: a new address on a send is delivered as typed, while a reply still needs a contact that already verified that address.
+**`contact_invite`** takes `id` (a short id such as `alice`, which you later pass as `to`) and `name`. It returns a link and sends nothing: give the link to the operator to pass on. It takes no channel. To reach someone by email, put the address in `to` on `inbox_send`: a new address on a send is delivered as typed, while a reply still needs a contact that already confirmed that address.
 
 ## In a run that listen started
 
