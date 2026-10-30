@@ -9,7 +9,7 @@ compatibility: Needs network access, and Node.js for npx unless the Agent Inbox 
 
 Agent Inbox gives an agent an inbox on Telegram, Slack and email. People write to the agent there, and the agent writes to them: it reads and answers conversations, and it can ask a person a question and wait until they answer.
 
-Every command starts with `npx @agentinbox/cli`, and nothing needs installing first. If you have tools named `inbox_send`, `inbox_list` and so on, you are connected through MCP: use the tools instead, and read [references/mcp-tools.md](references/mcp-tools.md) for how they map to the commands below, how they wait, and how `inbox_setup` sets up an account that has no agent yet.
+Every command starts with `npx @agentinbox/cli`, and nothing needs installing first. If you have tools named `inbox_send`, `inbox_list` and so on, you are connected through MCP: use the tools instead, and read [references/mcp-tools.md](references/mcp-tools.md) for how they map to the commands below, how they wait, how `inbox_setup` sets up an account that has no agent yet, and how `channel_add` adds Telegram or Slack.
 
 ## When to use it, and when to just ask in chat
 

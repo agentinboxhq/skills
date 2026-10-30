@@ -10,6 +10,7 @@ Everything in the skill holds; only the way you call it changes.
 - How a result reads
 - Waiting for an answer
 - Setting up from the chat
+- Adding Telegram or Slack
 - Tool arguments
 - In a run that `listen` started
 - What the tools can't do
@@ -19,6 +20,7 @@ Everything in the skill holds; only the way you call it changes.
 | CLI | MCP tool |
 |---|---|
 | `setup` (the agent and its email inbox) | `inbox_setup` with `agent_name` and `handle`, then `email` |
+| `channel add telegram`, `channel add slack` | `channel_add` with `channel` |
 | `send <text>` | `inbox_send` without a `kind` |
 | `send ask\|approve\|choose <text>` | `inbox_send` with `kind` set to `ask`, `approve` or `choose` |
 | `reply <conversation> …` | `inbox_reply` with `conversation`, and `kind` the same way |
@@ -41,6 +43,7 @@ There are no exit codes. The result says what happened in words:
 | expired, or canceled | Treat it as not approved |
 | the request is still open, with an id | Call `inbox_wait` with that id |
 | Agent Inbox is not set up yet | The account has no agent: see "Setting up from the chat" |
+| a link from `channel_add` | Give it to the person, then call `channel_add` again: see "Adding Telegram or Slack" |
 
 A plain message (no `kind`) returns `Delivered` as soon as delivery is confirmed.
 
@@ -60,6 +63,21 @@ Someone can connect an app before they have an agent. Then the tools say that Ag
 4. When they say they've opened it, call `inbox_setup` with no arguments to check.
 
 A name never renames an existing agent, and a handle never moves an existing mailbox; `handle` alone finishes a mailbox that wasn't created. An email address that's already confirmed changes on agentinbox.md, not with this tool.
+
+## Adding Telegram or Slack
+
+`channel_add` adds a channel from the chat, so don't send the operator to agentinbox.md or the CLI for it. It returns right away and never waits for them. Each call says where things stand and gives the one next step:
+
+| The result says | What to do |
+|---|---|
+| Telegram needs a bot, or Slack needs an app | Give them the setup link: they finish on that page |
+| Telegram has its bot | Give them the `/start` link and ask them to tap Start |
+| The Slack app is ready | Give them the install link, which works for 5 minutes |
+| It's connected | You're done: `inbox_send` reaches them there with `via` |
+
+Give the person the whole link, and call `channel_add` again after they finish. It picks up where things stand, and the setup page often takes them through the last step too, so that call may already say it's connected. Each link says when it stops working, and the next call makes a fresh one. A call can take a few seconds when the setup page is still saving.
+
+Never ask for a bot token or a Slack token: the page collects them, so they stay out of the chat. With no agent yet, the tool says Agent Inbox is not set up yet: do "Setting up from the chat" first. `channel_add` is for your operator's own Telegram or Slack; anyone else connects with `contact_invite`. Email isn't a choice here, since `inbox_setup` handles it.
 
 ## Tool arguments
 
@@ -108,6 +126,8 @@ A reply goes out on the conversation's own channel. With `to`, only those contac
 
 **`contact_list`** takes `limit` (50, max 100) and `after`. Each line is a contact (id, name, email), and your operator is marked `(you)`. When the result ends with a cursor, call it again with `after` before you decide someone isn't there.
 
+**`channel_add`** takes `channel`, `telegram` or `slack`, and nothing else: no token ever goes through it.
+
 **`contact_invite`** takes `id` (a short id such as `alice`, which you later pass as `to`) and `name`. It returns a link and sends nothing: give the link to the operator to pass on. It takes no channel. To reach someone by email, put the address in `to` on `inbox_send`: a new address on a send is delivered as typed, while a reply still needs a contact that already confirmed that address.
 
 ## In a run that listen started
@@ -124,6 +144,6 @@ When `npx @agentinbox/cli listen` started you for a conversation, these tools of
 
 ## What the tools can't do
 
-There are no tools for `login`, `connect`, `channel` or `listen`. Those happen on agentinbox.md or with the CLI on a computer (the agentinbox-cli skill says who runs which), and Telegram and Slack are set up there too.
+There are no tools for `login`, `connect`, `listen` or the rest of `channel`. Those happen on agentinbox.md or with the CLI on a computer (the agentinbox-cli skill says who runs which). `channel_add` is the one part of `channel` you can do here.
 
 When the operator has paused the agent on agentinbox.md, every tool returns an error that says so. Stop retrying and tell whoever you can reach; messages people send meanwhile wait in the inbox.

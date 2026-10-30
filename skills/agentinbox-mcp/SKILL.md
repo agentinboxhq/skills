@@ -1,6 +1,6 @@
 ---
 name: agentinbox-mcp
-description: Connects an AI app to the hosted Agent Inbox MCP server at https://mcp.agentinbox.md and troubleshoots that connection, for Claude, ChatGPT, Cursor, Claude Code, Codex, OpenCode, Hermes or any client that supports remote MCP servers with OAuth sign-in. Use when someone wants Agent Inbox in a chat app or an IDE without the CLI, asks for the MCP address or config, can't finish the sign-in, doesn't see the inbox tools, is told by the tools that Agent Inbox isn't set up yet, or asks what the server's tools can do. Not for using the tools once they are connected (agentinbox) or for the CLI (agentinbox-cli).
+description: Connects an AI app to the hosted Agent Inbox MCP server at https://mcp.agentinbox.md and troubleshoots that connection, for Claude, ChatGPT, Cursor, Claude Code, Codex, OpenCode, Hermes or any client that supports remote MCP servers with OAuth sign-in. Use when someone wants Agent Inbox in a chat app or an IDE without the CLI, asks for the MCP address or config, can't finish the sign-in, doesn't see the inbox tools, is told by the tools that Agent Inbox isn't set up yet, wants to add Telegram or Slack from the app, or asks what the server's tools can do. Not for using the tools once they are connected (agentinbox) or for the CLI (agentinbox-cli).
 license: MIT
 ---
 
@@ -116,13 +116,24 @@ When the account has no agent yet, the tools say that Agent Inbox is not set up 
 3. Confirm their email address with them, suggested or not, then call `inbox_setup` with `email`. A confirmation link goes to that address.
 4. When they say they've opened it, call `inbox_setup` with no arguments to check.
 
-A name never renames an existing agent, and a handle never moves an existing mailbox; `handle` alone finishes a mailbox that wasn't created. An email address that's already confirmed changes on agentinbox.md, not here. Telegram and Slack are set up on agentinbox.md or with the CLI.
+A name never renames an existing agent, and a handle never moves an existing mailbox; `handle` alone finishes a mailbox that wasn't created. An email address that's already confirmed changes on agentinbox.md, not here.
+
+## Add Telegram or Slack from the app
+
+`channel_add` takes the operator to the next step with one link, so don't send them off to agentinbox.md or the CLI for it. Pass `channel` as `telegram` or `slack`:
+
+1. Call `channel_add`. It says where things stand and gives the one next step, usually a link.
+2. Give the person the whole link. They finish in their own browser: the setup page when there's no bot or Slack app yet, then Start in Telegram or the install in Slack.
+3. When they say they're done, call `channel_add` again. It picks up where things stand, until it says the channel is connected. `inbox_send` then reaches them there with `via`.
+
+It returns right away and never waits for them, so don't call it in a loop. Each link says when it stops working, and the next call makes a fresh one. Never ask for a bot token or a Slack token: the setup page collects them, so they stay out of the chat. With no agent yet, it says Agent Inbox is not set up yet: do "Finish setup from the app" first. Email isn't a choice here, since `inbox_setup` handles it, and `contact_invite` is how someone else connects.
 
 ## What the tools do
 
 | Tool | What it does |
 |---|---|
 | `inbox_setup` | Creates the agent and its email inbox, sends the owner's confirmation link, or reports how far setup got |
+| `channel_add` | Takes the owner's Telegram or Slack to its next step, usually a link they finish in their own browser |
 | `inbox_send` | Starts a conversation. Without a `kind` it's a plain message; `ask`, `approve` or `choose` waits for the answer |
 | `inbox_reply` | Sends into an existing conversation, with the same kinds |
 | `inbox_wait` | Keeps waiting for an answer that hadn't come yet |
@@ -137,7 +148,7 @@ How to use them well, including how waiting works, is the agentinbox skill.
 
 ## Limits
 
-- No tools for `login`, `connect` or `channel`: those, and Telegram and Slack, happen on agentinbox.md or with the CLI (the agentinbox-cli skill says who runs which). Signing in an app doesn't set up the CLI on that computer either; the CLI connects with a one-time code.
+- No tools for `login`, `connect` or the rest of `channel`: those happen on agentinbox.md or with the CLI (the agentinbox-cli skill says who runs which). `channel_add` covers adding Telegram and Slack. Signing in an app doesn't set up the CLI on that computer either; the CLI connects with a one-time code.
 - Nothing here starts an agent when a message comes. The CLI's `listen` does that, on the computer where Claude Code works (the agentinbox-cli skill).
 - The server is for Agent Inbox cloud only. A self-hosted deployment has no hosted MCP server.
 
@@ -145,6 +156,7 @@ How to use them well, including how waiting works, is the agentinbox skill.
 
 - **The sign-in never finishes.** Finish onboarding on agentinbox.md, then connect again.
 - **The tools say Agent Inbox is not set up yet.** The account has no agent: create it with `inbox_setup`, as in "Finish setup from the app".
+- **A send says no Telegram or Slack channel is linked to this agent.** Add it with `channel_add`, as in "Add Telegram or Slack from the app".
 - **The tools don't show up.** Check the address for typos, then reload the app or start a new session; most apps only read the tool list when they connect.
 - **Every tool says the agent is paused.** The operator paused it on agentinbox.md. Messages wait in the inbox until they resume it.
 - **A removed app still reads as connected on agentinbox.md.** Nothing tells the server that an app disconnected. It's harmless.
