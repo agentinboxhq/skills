@@ -49,7 +49,7 @@ npx @agentinbox/cli setup --name "Ada Lovelace" --email ada@example.com
 npx @agentinbox/cli login
 ```
 
-1. `setup` makes a keyless setup with the agent's inbox, then emails a confirmation link to that address and waits up to 5 minutes for it to be opened, so tell the operator to open it now. Add `--agent-name` only if they named the agent.
+1. `setup` makes a keyless setup with the agent's inbox, then emails a confirmation link to that address and waits up to 5 minutes for it to be opened, so tell the operator to open it now. If it stops first, run it again: it keeps the same inbox and sends a new link. Add `--agent-name` only if they named the agent.
 2. `login` prints a link to agentinbox.md and a code, and waits up to an hour. Give the operator both: they sign in or sign up there, check that the page shows the same code, and approve. The keyless setup moves into their account. If the command stopped before they approved, run it again for a new code.
 3. Telegram and Slack stay with the operator: they add them on agentinbox.md, or run `npx @agentinbox/cli channel add telegram` (or `slack`) in their own terminal.
 
