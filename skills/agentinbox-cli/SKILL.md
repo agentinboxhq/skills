@@ -22,21 +22,21 @@ How an agent uses the conversation and `contact` commands to ask people things a
 ## Set up an inbox
 
 ```bash
-npx @agentinbox/cli setup                 # name, email, the agent's address; then offers Telegram or Slack
+npx @agentinbox/cli setup                 # your name and email, the agent's name and address; then offers Telegram or Slack
 npx @agentinbox/cli setup telegram        # or slack: set up and connect that channel
 npx @agentinbox/cli channel add slack     # one more channel later: telegram, slack or email
 npx @agentinbox/cli channel list          # what's connected, and your default
 npx @agentinbox/cli login                 # keep the setup in an Agent Inbox account
 ```
 
-- `setup` asks for a name and an email address, creates the agent's inbox and prints its address. Enter skips the channel question. Running it again resumes whatever step is left.
-- Without a terminal, pass the answers as flags: `--name "Ada Lovelace" --email ada@example.com --agent-name "Deploy bot"`. The rest are in [references/commands.md](references/commands.md).
+- `setup` asks for the operator's name and email address, then what the agent is called. It offers an address from that name to keep or change, and shows whether a typed one is free. It then creates the inbox and prints the address, which can't be changed later. Enter skips the channel question. Running it again resumes whatever step is left.
+- Without a terminal, pass the answers as flags: `--name "Ada Lovelace" --email ada@example.com --agent-name "Deploy bot"`. A new agent needs `--agent-name`. Its address comes from the name unless `--agent-handle` picks another. The rest are in [references/commands.md](references/commands.md).
 - On a terminal, `channel add telegram` or `slack` asks whether to paste a token there or finish on a page. Without a terminal it prints a page link (`https://www.agentinbox.md/connect#…`, or `connect?channel=slack#…` for Slack) and waits up to 15 minutes while the person creates the bot with @BotFather and taps Start (Telegram), or pastes an App Configuration Token and clicks Add to Slack. Forward that link exactly. Exit `11` means they didn't finish in time; nothing is broken, and running the same command again resumes at the missing step.
 - At the end, `setup` shows how to teach coding agents: `npx skills add agentinboxhq/skills`. Without a terminal it installs nothing unless it gets `--agent` and `-y`, such as `npx skills add agentinboxhq/skills --agent codex -y`; Hermes and OpenClaw also take `-g` (`--agent hermes-agent` or `--agent openclaw`).
 
 ### Keyless setup and login
 
-`setup` without an account makes a **keyless setup**: a free demo with a small message allowance. Its email inbox can receive but sends nothing until the operator claims it. When the allowance runs out, commands exit `1` with "You've used the 5 free messages of this keyless demo." and a sign-up link.
+`setup` without an account makes a **keyless setup**: a free demo with a small message allowance. Its email inbox can receive but sends nothing until the operator claims it. When the allowance runs out, commands exit `1` with "You've reached the 5-message limit of this free Agent Inbox demo." and a sign-up link.
 
 `login` opens agentinbox.md, where the operator checks that the page shows the same code as the terminal and approves. The keyless setup moves into the account and its channels keep working. The CLI saves the key in `~/.agentinbox/config.json`.
 
@@ -45,11 +45,11 @@ npx @agentinbox/cli login                 # keep the setup in an Agent Inbox acc
 Only when the operator asks you to. Ask them for the name and email address to use; never make either up.
 
 ```bash
-npx @agentinbox/cli setup --name "Ada Lovelace" --email ada@example.com
+npx @agentinbox/cli setup --name "Ada Lovelace" --email ada@example.com --agent-name "Deploy bot"
 npx @agentinbox/cli login
 ```
 
-1. `setup` makes a keyless setup with the agent's inbox, then emails a confirmation link to that address and waits up to 5 minutes for it to be opened, so tell the operator to open it now. If it stops first, run it again: it keeps the same inbox and sends a new link. Add `--agent-name` only if they named the agent.
+1. `setup` makes a keyless setup with the agent's inbox, then emails a confirmation link to that address and waits up to 5 minutes for it to be opened, so tell the operator to open it now. If it stops first, run it again: it keeps the same inbox and sends a new link. Ask the operator what to call the agent first: a new agent needs `--agent-name`, and its address can't be changed later.
 2. `login` prints a link to agentinbox.md and a code, and waits up to an hour. Give the operator both: they sign in or sign up there, check that the page shows the same code, and approve. The keyless setup moves into their account. If the command stopped before they approved, run it again for a new code.
 3. Telegram and Slack stay with the operator: they add them on agentinbox.md, or run `npx @agentinbox/cli channel add telegram` (or `slack`) in their own terminal.
 
@@ -134,7 +134,9 @@ Scripts branch on these, never on the printed text:
 | The CLI prints | What to do |
 |---|---|
 | `No inbox set up yet. Ask your operator to run: npx @agentinbox/cli setup (or set INBOX_SECRET_KEY + INBOX_TO).` | Pass the message on. The operator runs `setup` or `connect`, asks you to set up for them, or gives the job `INBOX_SECRET_KEY` and `INBOX_TO`. Don't set it up unasked |
-| `You've used the 5 free messages of this keyless demo.` | Stop retrying. `login` claims the setup: the operator runs it, or asks you to and approves it on agentinbox.md |
+| `Pass --agent-name <name> when running …` | Ask the operator what to call the agent, then run it again with `--agent-name` |
+| `<address> is taken. Pick another with --agent-handle, such as <free one>.` | Ask the operator which address they want, then run it again with `--agent-handle` |
+| `You've reached the 5-message limit of this free Agent Inbox demo.` | Stop retrying. `login` claims the setup: the operator runs it, or asks you to and approves it on agentinbox.md |
 | `Outbound email needs an Agent Inbox account.` | A keyless setup can't send email until `login` claims it, run by the operator or, when they ask, by you |
 | `This agent is paused: …` | The operator paused it on agentinbox.md on purpose. Stop retrying until they resume it |
 | A used, expired or wrong code | Ask the operator for a new one-time code |
