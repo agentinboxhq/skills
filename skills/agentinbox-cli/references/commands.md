@@ -24,7 +24,8 @@ Creates the agent's inbox without an account (a keyless setup), or in the accoun
 |---|---|
 | `--name <name>` | The operator's first and last name, shown to people they invite. Skips the question |
 | `--email <address>` | The operator's email address, for the email channel. Skips the question. Without a terminal, a keyless setup needs it |
-| `--agent-name <name>` | What the agent is called, as people see it |
+| `--agent-name <name>` | What the agent is called, as people see it. Skips the question. Without a terminal, a new agent needs it |
+| `--agent-handle <handle>` | A new agent's address before the `@`, such as `deploy-bot`. Skips the question. Comes from the name otherwise, and can't be changed later |
 | `--agent-description <text>` | A line about what the agent does, shown with its name |
 | `--agent-picture <file-or-url>` | A JPEG or PNG of up to 2 MB. Needs `login` first |
 | `--telegram-bot-token <token>` | The BotFather token. Skips the paste-or-page question |
