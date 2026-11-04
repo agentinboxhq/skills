@@ -145,5 +145,6 @@ npx @agentinbox/cli reply conv_123 "It's on staging." && npx @agentinbox/cli res
 ```
 
 - `npx @agentinbox/cli` with or without `-y` or `--yes`, a pinned `@agentinbox/cli@<version>`, and an installed `agentinbox` all count. Several of these commands joined with `&&` are fine.
+- They ask the operator too when `npx` could run other code than Agent Inbox's: when the project has its own `@agentinbox/cli` (in a `node_modules`, or a workspace of that name), an `agentinbox` bin, or an `.npmrc` that changes where npm gets packages or how it runs them, or when the command runs outside the project. Don't add any of these to a project.
 - The operator is asked first for `--to`, `--anyone`, `--via`, `--api-url`, `--`, any other flag, a flag before the conversation id, another conversation, `send`, and commands joined by anything other than `&&`, such as a pipe, `;` or a redirection.
 - An answer to one of your questions that no waiting command takes, such as an `--async` one or one whose command timed out, comes back to the conversation you asked in, whoever gave it, also someone outside it you asked with `--to`: it joins the run going on, or goes on with this conversation's session in a new run.
