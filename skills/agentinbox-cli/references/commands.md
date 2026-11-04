@@ -74,12 +74,12 @@ npx @agentinbox/cli channel default <telegram|slack|email>
 ## listen, listen status, listen stop
 
 ```bash
-npx @agentinbox/cli listen claude-code [--foreground] [--timeout <duration>] [--runs-per-hour <n>] [--max-run <duration>]
+npx @agentinbox/cli listen <claude-code|codex|opencode> [--foreground] [--timeout <duration>] [--runs-per-hour <n>] [--max-run <duration>] [--runs-at-once <n>]
 npx @agentinbox/cli listen status [--json]
 npx @agentinbox/cli listen stop
 ```
 
-`listen claude-code` listens for messages to the agent on this computer, for the folder it runs in. A message from the operator, or from a contact they turned on **Listen to** for, starts Claude Code there for that conversation: a run. Claude Code is the only host for now.
+`listen <host>` listens for messages to the agent on this computer, for the folder it runs in. A message from the operator, or from a contact they turned on **Listen to** for, starts the host there for that conversation: a run. The hosts are Claude Code (`claude-code`), Codex (`codex`) and OpenCode (`opencode`, 1.19 or later, or 2.2 or later).
 
 | Flag | Meaning |
 |---|---|
@@ -87,14 +87,15 @@ npx @agentinbox/cli listen stop
 | `--timeout <duration>` | When an agent runs it: how long to wait for the operator's Allow. Default: until the question expires, in an hour. Exits `11` when it runs out |
 | `--runs-per-hour <n>` | How many runs may start in an hour. Default 20 |
 | `--max-run <duration>` | How long one run may go on, such as `30m` or `2h`. Default 30m |
+| `--runs-at-once <n>` | How many runs may go on at once, each for its own conversation. Default 5 |
 | `--json` | `listen status` only: print JSON |
 
 - **Asking first.** At a terminal, the person answers there. Without one, the operator gets an Allow/Deny message on their channel that names the computer and the folder, and says so when it moves the listener from another computer. The exit codes are those of `approve`: `0` listening, `10` denied, `11` still waiting (the same command run again goes on waiting for the same answer), `12` the question expired, `1` an error. When this computer already listens for the same host and folder, it says so and exits `0` without asking.
 - **Where it runs.** On macOS, a launchd agent for the user, `md.agentinbox.listen`, listed as `agentinbox-listen` in System Settings › General › Login Items & Extensions. On Linux, a systemd user service, `agentinbox-listen.service`; `loginctl enable-linger` keeps it running while the user is logged out. On Windows, it runs inside WSL: as that systemd user service once systemd is on there (`[boot] systemd=true` in `/etc/wsl.conf`), or with `--foreground` until then. It starts again after a restart or a crash, but not after it stopped on purpose. Its log is `listen.log` in a `listen` folder next to the config file: `~/.agentinbox/listen/listen.log` by default.
-- **Sessions.** Each conversation gets one Claude Code session. The next message in it goes on with that session until the conversation is resolved; after that, the next message starts a fresh one. A message that comes during a run joins it, and so does an answer to one of the agent's questions that no waiting command of the run takes, such as an `--async` one or one whose command timed out. An answer comes back to the conversation its question was asked in, whoever gave it, also someone outside it asked with `--to`; with no session here for that conversation, another host asked, and it starts nothing. `/stop` in the conversation stops its run. A message cut off by a restart isn't run again; the conversation is told instead. Messages older than a day never start a run.
-- **Questions.** A permission always goes to the operator's chat as an Allow/Deny message, with `--foreground` too; only the question that turns listening on can be answered in the terminal. A question Claude Code asks that isn't a permission, such as which of two options to take, goes to the person who wrote, in the conversation.
-- **Limits.** Messages over `--runs-per-hour` wait, and the operator hears about it once an hour. A run that goes on longer than `--max-run` stops, and the conversation is told to send another message to go on.
-- **`listen status`** says where the agent listens (agentinbox.md shows it too, such as "Listening on MacBook (Claude Code)"), what this computer does, how many conversations have a session, and where the log is. With `--json`, `listening` is where the agent listens (`null` when nowhere), `thisComputer.listeningHere` whether that's this computer, `thisComputer.stopped.reason` why this computer stopped, and `thisComputer.lastRunAt` when a run last started here.
+- **Sessions.** Each conversation gets one session of the host. The next message in it goes on with that session until the conversation is resolved; after that, the next message starts a fresh one. A message that comes during a run joins it (OpenCode 1 takes it once its turn ends), and so does an answer to one of the agent's questions that no waiting command of the run takes, such as an `--async` one or one whose command timed out. An answer comes back to the conversation its question was asked in, whoever gave it, also someone outside it asked with `--to`; with no session here for that conversation, another host asked, and it starts nothing. `/stop` in the conversation stops its run. Conversations don't wait for each other: their runs go on side by side, all in the same folder, up to `--runs-at-once`, and each host is told the others may change files there; a conversation over that waits for a run to end. A message cut off by a restart isn't run again; the conversation is told instead. Messages older than a day never start a run.
+- **Questions.** A permission always goes to the operator's chat as an Allow/Deny message, with `--foreground` too; only the question that turns listening on can be answered in the terminal. A question the host asks that isn't a permission, such as which of two options to take, goes to the person who wrote, in the conversation.
+- **Limits.** Messages over `--runs-per-hour` wait, and the operator hears about it once an hour. A conversation over `--runs-at-once` waits for a run to end. A run that goes on longer than `--max-run` stops, and the conversation is told to send another message to go on.
+- **`listen status`** says where the agent listens (agentinbox.md shows it too, such as "Listening on MacBook (Codex)"), what this computer does, how many conversations have a session, and where the log is. With `--json`, `listening` is where the agent listens (`null` when nowhere), `thisComputer.listeningHere` whether that's this computer, `thisComputer.stopped.reason` why this computer stopped, and `thisComputer.lastRunAt` when a run last started here.
 - **`listen stop`** stops listening on this computer, a foreground listener included. It leaves another computer alone, and says so when the agent listens there. Sessions stay until their conversations are resolved. `listen status` and `listen stop` both work while the agent is paused.
 
 **When it stops by itself**, `listen status` says why, and `thisComputer.stopped.reason` in its JSON is one of these:
@@ -102,9 +103,9 @@ npx @agentinbox/cli listen stop
 | Reason | What happened, and what to do |
 |---|---|
 | `key_changed` | The operator regenerated the key on agentinbox.md. It says "The key changed on agentinbox.md. Connect again, then listen again." and doesn't retry |
-| `listening_elsewhere` | Another computer took over. `listen status` says which. Running `listen claude-code` here asks the operator to move it back |
-| `host_missing` | Claude Code was gone or signed out when the listener started again. Once it's installed and signed in, run `listen claude-code` again |
-| `connection_changed` | This computer was connected anew since listening was turned on, such as with `connect`, `login` or `setup`, so it runs nothing left for the old connection. Run `listen claude-code` again |
+| `listening_elsewhere` | Another computer took over. `listen status` says which. Running `listen <host>` here asks the operator to move it back |
+| `host_missing` | The host was gone or signed out when the listener started again. Once it's installed and signed in, run `listen <host>` again |
+| `connection_changed` | This computer was connected anew since listening was turned on, such as with `connect`, `login` or `setup`, so it runs nothing left for the old connection. Run `listen <host>` again |
 
 While the agent is paused, it doesn't stop: it waits, and runs start again once the operator resumes it.
 
@@ -119,7 +120,7 @@ While the agent is paused, it doesn't stop: it waits, and runs start again once 
 
 ## How the terminal screen looks
 
-On a terminal, `setup`, `login`, `connect`, `channel add` and `listen claude-code` draw one screen and update it in place: the agent's mascot, the command, the steps done, and what it's waiting for. Pipes, CI, `NO_COLOR`, `FORCE_COLOR=0`, `TERM=dumb` and terminals narrower than 48 columns get plain text instead, so what agents read stays the same. The conversation commands, `contact`, `listen status` and `listen stop` always print plain text.
+On a terminal, `setup`, `login`, `connect`, `channel add` and `listen <host>` draw one screen and update it in place: the agent's mascot, the command, the steps done, and what it's waiting for. Pipes, CI, `NO_COLOR`, `FORCE_COLOR=0`, `TERM=dumb` and terminals narrower than 48 columns get plain text instead, so what agents read stays the same. The conversation commands, `contact`, `listen status` and `listen stop` always print plain text.
 
 | Variable | Effect |
 |---|---|
