@@ -27,6 +27,7 @@ Everything in the skill holds; only the way you call it changes.
 | `list`, `show`, `read`, `resolve` | `inbox_list`, `inbox_show`, `inbox_read`, `inbox_resolve` |
 | `contact list --after <next>` | `contact_list` with `after` |
 | `contact invite <id> --name "…"` | `contact_invite` with `id` and `name` |
+| `card` | `agent_card` |
 | `--to`, `--via`, `--from`, `--option`, `--anyone`, `--ttl 2h` | `to`, `via`, `from`, `options`, `anyone_may_answer`, `ttl_seconds: 7200` |
 | `list --wait --timeout 25s` | `inbox_list` with `wait_seconds: 25` (25 at most) |
 
@@ -82,6 +83,8 @@ Whoever opens the link connects as your operator. Call `channel_add` only when y
 Never ask for a bot token or a Slack token: the page collects them, so they stay out of the chat. With no agent yet, the tool says Agent Inbox is not set up yet: do "Setting up from the chat" first. `channel_add` is for your operator's own Telegram or Slack; anyone else connects with `contact_invite`. Email isn't a choice here, since `inbox_setup` handles it.
 
 ## Tool arguments
+
+**`agent_card`** takes nothing. It answers with your greeting and your card: your name, your address and your link. ChatGPT and Claude also draw the card in the chat. Say the greeting, then show the card.
 
 **`inbox_send`** starts a conversation:
 

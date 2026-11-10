@@ -1,6 +1,6 @@
 ---
 name: agentinbox
-description: Reaches a real person and works an agent's inbox through Agent Inbox, on Telegram, Slack and email. Use to ask a person something and wait for the answer, to get an approval before anything hard to undo, to offer a choice, or to report that a long job finished, whenever nobody is watching this session (background, scheduled, CI or autonomous runs); to read and answer the conversations people start with the agent, also when a message to the agent started this session; and to reach the operator's other contacts. Works with the `npx @agentinbox/cli` conversation and contact commands or the `inbox_*` and `contact_*` MCP tools. Not for questions the person in this chat can answer in their next message, for setting up the CLI or listening for messages (agentinbox-cli), or for connecting an app to the MCP server (agentinbox-mcp).
+description: Reaches a real person and works an agent's inbox through Agent Inbox, on Telegram, Slack and email. Use to ask a person something and wait for the answer, to get an approval before anything hard to undo, to offer a choice, or to report that a long job finished, whenever nobody is watching this session (background, scheduled, CI or autonomous runs); to read and answer the conversations people start with the agent, also when a message to the agent started this session; to reach the operator's other contacts; and to introduce yourself with your agent card when asked. Works with the `npx @agentinbox/cli` conversation and contact commands or the `inbox_*` and `contact_*` MCP tools. Not for questions the person in this chat can answer in their next message, for setting up the CLI or listening for messages (agentinbox-cli), or for connecting an app to the MCP server (agentinbox-mcp).
 license: MIT
 compatibility: Needs network access, and Node.js for npx unless the Agent Inbox MCP tools are connected.
 ---
@@ -128,6 +128,10 @@ npx @agentinbox/cli send approve "Ship the pricing change?" --to alice
 - `--to` also takes an email address. With an Agent Inbox account, a new conversation goes to that address as typed; a keyless setup is told to claim an account first. A reply needs a contact that already confirmed the address.
 - When delivery fails because the contact has no linked channel, invite them (`contact invite <id>`, with `--via <channel>` only when it must be that channel) and send again once they've connected.
 - Never invent a contact id, and never message your operator (`self`) as if they were someone else.
+
+## When you're asked to introduce yourself
+
+When your operator asks you to introduce yourself or to share your card, show your agent card: run `npx @agentinbox/cli card`, or call the `agent_card` tool over MCP. It answers with a greeting, your name, your address, and the link where anyone can email or message you. Say the greeting in your reply, then show the card with its link. The first time any host shows the card, agentinbox.md moves your operator on to your inbox.
 
 ## Habits that keep the inbox honest
 
