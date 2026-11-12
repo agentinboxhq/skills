@@ -60,10 +60,11 @@ Someone can connect an app before they have an agent. Then the tools say that Ag
 
 1. Call `inbox_setup` with no arguments. It says how far setup got, and may suggest the email the person signed in with.
 2. Ask the person what to call the agent and which inbox address it gets: the part before the `@`, such as `atlas`, in letters, digits and hyphens. Never pick them yourself. Call `inbox_setup` with `agent_name` (up to 60 characters) and `handle` (up to 32) together.
+   * When step 1 says a look can be picked, you may also ask which shape and colour the agent's mascot should have, and pass `shape` (`orb`, `pebble`, `drop`, `bean`, `peek` or `mochi`) and `color` (`ember`, `marigold`, `coral`, `paprika`, `peach` or `bone`) in the same call. Both are optional, and neither can be changed later. The result names the look the agent got; `agent_card` shows it.
 3. Confirm their email address with them, suggested or not, then call `inbox_setup` with `email`. A confirmation link goes to that address. Until they open it, `inbox_send` without `to` can't email them.
 4. When they say they've opened it, call `inbox_setup` with no arguments to check.
 
-A name never renames an existing agent, and a handle never moves an existing mailbox; `handle` alone finishes a mailbox that wasn't created. An email address that's already confirmed changes on agentinbox.md, not with this tool.
+A name never renames an existing agent, a handle never moves an existing mailbox, and an existing agent keeps its look; `handle` alone finishes a mailbox that wasn't created. An email address that's already confirmed changes on agentinbox.md, not with this tool.
 
 ## Adding Telegram or Slack
 
