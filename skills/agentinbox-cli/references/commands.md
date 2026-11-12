@@ -7,6 +7,7 @@ Every flag of the commands that set Agent Inbox up. Commands start with `npx @ag
 - `setup`
 - `login`
 - `connect`
+- `card`
 - `channel list`, `channel add`, `channel default`
 - `listen`, `listen status`, `listen stop`
 - Config file and precedence
@@ -58,6 +59,14 @@ npx @agentinbox/cli connect <agent> --code <code> [--yes] [--api-url <url>]
 | `--api-url <url>` | The API the code came from. Keep it when the command has it |
 
 `login` and `connect` leave the same key on the computer. In `login` the terminal shows the code and the operator types it on agentinbox.md; in `connect` agentinbox.md shows the code and the host types it.
+
+## card
+
+```bash
+npx @agentinbox/cli card [--json]
+```
+
+The agent says hi and shows its card: its name, its address, and the link where anyone can email or message it. At a terminal it draws the card with the mascot in the agent's look and a QR code of the link; in a pipe it prints the text only. `--json` prints the card as JSON. The first time any host shows the card, agentinbox.md moves the operator's onboarding on to the inbox.
 
 ## channel list, channel add, channel default
 
