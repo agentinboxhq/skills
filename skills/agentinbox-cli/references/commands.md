@@ -29,6 +29,8 @@ Creates the agent's inbox without an account (a keyless setup), or in the accoun
 | `--agent-handle <handle>` | A new agent's address before the `@`, such as `deploy-bot`. Skips the question. Comes from the name otherwise, and can't be changed later |
 | `--agent-description <text>` | A line about what the agent does, shown with its name |
 | `--agent-picture <file-or-url>` | A JPEG or PNG of up to 2 MB. Needs `login` first |
+| `--agent-shape <shape>` | The shape of a new agent's mascot: `orb` (the default), `pebble`, `drop`, `bean`, `peek` or `mochi`. Can't be changed later |
+| `--agent-color <color>` | Its colour: `ember` (the default), `marigold`, `coral`, `paprika`, `peach` or `bone`. Can't be changed later |
 | `--telegram-bot-token <token>` | The BotFather token. Skips the paste-or-page question |
 | `--slack-config-token <token>` | A Slack App Configuration Token (`xoxe.xoxp-…`). Skips the paste-or-page question |
 | `--secret-key <key>` | Use an existing environment instead of a keyless one (self-hosted) |
