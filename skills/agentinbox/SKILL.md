@@ -168,6 +168,7 @@ Commands exit `1` with a message that says what to do. Pass it on where the oper
 - **"You've reached the 5-message limit of this free Agent Inbox demo."** Stop and pass the message on. `npx @agentinbox/cli login` claims the setup: the operator runs it, or asks you to and approves it on agentinbox.md.
 - **"Outbound email needs an Agent Inbox account."** A keyless setup receives email but can't send it until the operator claims it with `login`.
 - **"This agent is paused."** The operator paused it on agentinbox.md on purpose. Stop retrying, say that it's paused, and pick the inbox up again once they resume it. Messages people send meanwhile wait in the inbox.
+- **"Human message daily limit reached (50). Resets at …"** (or `monthly`). The account has sent all the messages it may today or this month, so nothing reaches anyone until that time. Stop retrying: Agent Inbox has already told the operator, once. Messages people send still come in.
 
 ## More detail
 

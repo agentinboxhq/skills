@@ -143,6 +143,7 @@ Scripts branch on these, never on the printed text:
 | `You've reached the 5-message limit of this free Agent Inbox demo.` | Stop retrying. `login` claims the setup: the operator runs it, or asks you to and approves it on agentinbox.md |
 | `Outbound email needs an Agent Inbox account.` | A keyless setup can't send email until `login` claims it, run by the operator or, when they ask, by you |
 | `This agent is paused: …` | The operator paused it on agentinbox.md on purpose. Stop retrying until they resume it |
+| `Human message daily limit reached (50). Resets at …` (or `monthly`) | The account has sent all it may today or this month. Stop retrying until that time: Agent Inbox has already told the operator, once. Messages to the agent still come in |
 | A used, expired or wrong code | Ask the operator for a new one-time code |
 | No linked channel for a contact | Invite them: `contact invite <id> --name "…"`, then send again once they've connected |
 | Listening needs an Agent Inbox account (`listen_needs_account`) | A keyless setup can't listen. `login` claims it, run by the operator or, when they ask, by you; then run `listen` again |
