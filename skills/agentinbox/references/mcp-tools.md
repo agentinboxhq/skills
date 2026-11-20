@@ -138,7 +138,7 @@ A reply goes out on the conversation's own channel. With `to`, only those contac
 
 ## In a run that listen started
 
-When `npx @agentinbox/cli listen` started you for a conversation, these tools of the Agent Inbox server run without asking anyone, on that conversation, with only these arguments:
+When `npx @agentinbox/cli listen` started you for your operator's own conversation, or a full-access contact's, these tools of the Agent Inbox server run without asking anyone, on that conversation, with only these arguments. In a contact's conversation, or a group, you have the `this_conversation` tools instead, and these run only where the folder's own settings allow them (SKILL.md, "In a contact's conversation, or a group"):
 
 | Tool | Arguments |
 |---|---|
