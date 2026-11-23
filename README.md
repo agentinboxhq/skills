@@ -118,6 +118,7 @@ plugin.json                  the same plugin in the open Agent Plugins format, w
 skills.sh.json               how skills.sh groups the skills on its page
 scripts/validate.mjs         the checks CI runs
 scripts/check-codex-plugin.mjs   installs the plugin into a throwaway Codex home and checks it
+scripts/package-openai.mjs   builds the ZIP for OpenAI's plugin directory (ChatGPT and Codex)
 ```
 
 ## Change a skill
@@ -153,6 +154,16 @@ claude plugin eval .                                  # every case, with a no-pl
 ```
 
 See [evals/README.md](evals/README.md) for what each case checks.
+
+### OpenAI's plugin directory
+
+ChatGPT and Codex list the plugin from a ZIP you upload, not from this repository. Its listing, the five positive and three negative cases reviewers run, and the release notes live under `extensions["com.openai"]` in `plugin.json`. The directory wants an explicit version, so the script writes it into the packaged `plugin.json` only:
+
+```bash
+node scripts/package-openai.mjs 0.1.0   # dist/agentinbox-0.1.0.zip and its .sha256
+```
+
+It runs `validate.mjs` first, then opens the archive and checks for one plugin root, the files `plugin.json` names, and nothing secret. It says `DRAFT` while the support, privacy and terms URLs or the demo recording are missing. Reviewer sign-in goes in the dashboard, never in the package.
 
 ## What it sends where
 

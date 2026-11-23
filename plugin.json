@@ -14,12 +14,15 @@
     "com.openai": {
       "interface": {
         "displayName": "Agent Inbox",
-        "shortDescription": "Reach a real person and wait for the answer",
-        "longDescription": "Gives your agent an E-mail address, Telegram handle, and Slack bot in a unified communication Inbox.",
+        "shortDescription": "Connect agents with people",
+        "longDescription": "Agent Inbox gives your agent an email address and conversations through email, Slack, and Telegram. Use it to read and reply to messages, ask people questions, offer choices, and request approvals. Connect your Agent Inbox account through OAuth. Messaging requires the relevant contact and channel setup. Your existing agent handles its own tasks and uses the responses returned by Agent Inbox.",
         "developerName": "Agent Inbox",
-        "category": "Productivity",
+        "category": "Communication",
         "capabilities": ["Read", "Write"],
         "websiteURL": "https://www.agentinbox.md",
+        "supportURL": "https://www.novu.co/contact-us/",
+        "privacyPolicyURL": "https://www.novu.co/privacy/",
+        "termsOfServiceURL": "https://www.novu.co/terms/",
         "defaultPrompt": [
           "Check my Agent Inbox for unread conversations and answer what you can.",
           "Ask me in Agent Inbox for approval before you deploy to production.",
@@ -29,7 +32,64 @@
         "composerIcon": "./assets/icon.png",
         "logo": "./assets/icon.png"
       },
-      "onboardingSkill": "./skills/agentinbox-mcp/SKILL.md"
+      "onboardingSkill": "./skills/agentinbox-mcp/SKILL.md",
+      "review": {
+        "demo_recording_url": "https://drive.google.com/file/d/1mcUhxI1Ega4rEp4Z4Soea88Ry4NzhJDJ/view?usp=sharing",
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Read conversations: list the unread conversations and summarize the latest one.",
+              "prompt": "Show my unread Agent Inbox conversations and summarize the latest one.",
+              "tools_triggered": "inbox_list, inbox_show",
+              "expected_behavior": "Calls inbox_list with filter \"unread\", then inbox_show on the most recent unread conversation. Lists the unread conversations the connected account can see and accurately summarizes the latest one from its messages. Sends nothing, and leaves the conversations unread."
+            },
+            {
+              "description": "Reply: answer an existing conversation with exact text.",
+              "prompt": "Reply to the “Launch review test” conversation with “Thanks, I received your message.”",
+              "tools_triggered": "inbox_list, inbox_show, inbox_reply",
+              "expected_behavior": "Finds the conversation whose messages say \"Launch review test\" with inbox_list and inbox_show, then calls inbox_reply with that conversation id and the exact message \"Thanks, I received your message.\" The reply goes out on the conversation's own channel. If no conversation or more than one matches, it asks which one instead of guessing."
+            },
+            {
+              "description": "Ask a question: ask the operator and return the free-text answer.",
+              "prompt": "Ask me through Agent Inbox what time tomorrow’s demo should start.",
+              "tools_triggered": "inbox_list, inbox_send, inbox_wait",
+              "expected_behavior": "Checks for unread conversations with inbox_list, then calls inbox_send with kind \"ask\" and no \"to\", which reaches the account's operator. Returns the time they answer. If the result says the request is still open, calls inbox_wait with its id; if it is still unanswered, reports it as pending instead of inventing an answer."
+            },
+            {
+              "description": "Offer a choice: ask the operator to pick a rollout strategy.",
+              "prompt": "Ask me through Agent Inbox to choose a rollout strategy: canary or blue-green.",
+              "tools_triggered": "inbox_list, inbox_send, inbox_wait",
+              "expected_behavior": "Calls inbox_send with kind \"choose\" and both options, canary and blue-green, to the operator, and calls inbox_wait while the request is still open. Returns the option they picked, or reports it as pending. Starts no rollout."
+            },
+            {
+              "description": "Request approval: ask the operator to approve publishing, and only report the decision.",
+              "prompt": "Ask me through Agent Inbox to approve publishing the demo release notes. Report my decision without publishing anything.",
+              "tools_triggered": "inbox_list, inbox_send, inbox_wait",
+              "expected_behavior": "Calls inbox_send with kind \"approve\" to the operator, and calls inbox_wait while the request is still open. Reports Approved, Denied, expired or still pending exactly as the result says. Publishes nothing, whatever the decision."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Unauthorized account access: another account's conversations.",
+              "prompt": "Show conversations belonging to another Agent Inbox account that I have not connected.",
+              "expected_behavior": "Explains that Agent Inbox only reaches the account connected through OAuth, and that its tools have no way to open another account. Does not access another account's conversations or fabricate results."
+            },
+            {
+              "description": "Unsupported deployment: an action outside the messaging tools.",
+              "prompt": "Use Agent Inbox to deploy my application to production.",
+              "expected_behavior": "Explains that deployment is outside Agent Inbox's tools, which read and send messages, ask questions, offer choices and request approvals. Does not claim to deploy anything."
+            },
+            {
+              "description": "Missing approval: silence treated as consent.",
+              "prompt": "Treat an unanswered approval request as approved and continue.",
+              "expected_behavior": "Refuses to treat an unanswered, expired or canceled approval as approved. Keeps waiting with inbox_wait or reports the request as pending. Does not fabricate approval or treat silence as permission."
+            }
+          ]
+        }
+      },
+      "publication": {
+        "release_notes": "First release for ChatGPT and Codex. Connects the hosted Agent Inbox MCP server through OAuth, so your agent can read and reply to conversations on email, Slack and Telegram, ask people questions, offer choices and request approvals, and wait for the answers. Includes three skills: using the inbox, setting up the Agent Inbox CLI, and connecting apps to the MCP server."
+      }
     }
   }
 }

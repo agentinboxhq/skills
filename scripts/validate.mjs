@@ -60,7 +60,7 @@ const AGENT_PLUGINS_REMOTE_SERVER_FIELDS = new Set(['type', 'url', 'headers']);
  * listing goes under `extensions["com.openai"]`: the `interface`, and the skill it offers to run after installing.
  */
 const CODEX_EXTENSION = 'com.openai';
-const CODEX_EXTENSION_FIELDS = new Set(['interface', 'onboardingSkill']);
+const CODEX_EXTENSION_FIELDS = new Set(['interface', 'onboardingSkill', 'review', 'publication']);
 /** The listing fields, spelled the way OpenAI documents them. Codex ignores any other field. */
 const CODEX_INTERFACE_FIELDS = new Set([
   'displayName',
@@ -70,6 +70,7 @@ const CODEX_INTERFACE_FIELDS = new Set([
   'category',
   'capabilities',
   'websiteURL',
+  'supportURL',
   'privacyPolicyURL',
   'termsOfServiceURL',
   'defaultPrompt',
@@ -82,6 +83,14 @@ const CODEX_INTERFACE_FIELDS = new Set([
 /** Codex shows at most three starter prompts of up to 128 characters, and drops the rest. */
 const MAX_CODEX_PROMPTS = 3;
 const MAX_CODEX_PROMPT_LENGTH = 128;
+/** The directory's limits on the listing text (https://developers.openai.com/plugins/deploy/submission). */
+const CODEX_TEXT_LIMITS = { displayName: 30, shortDescription: 30, longDescription: 4000, developerName: 80 };
+const CODEX_URL_FIELDS = ['websiteURL', 'supportURL', 'privacyPolicyURL', 'termsOfServiceURL'];
+const MAX_CODEX_URL_LENGTH = 1024;
+/** An MCP review needs exactly this many test cases of each kind. */
+const CODEX_TEST_CASES = { positive: 5, negative: 3 };
+const CODEX_REVIEW_FIELDS = new Set(['test_cases', 'demo_recording_url', 'commerce', 'commerce_description']);
+const CODEX_PUBLICATION_FIELDS = new Set(['countries', 'release_notes', 'translations']);
 /** Codex reads its marketplace from here first, and .claude-plugin/marketplace.json only when this is missing. */
 const CODEX_MARKETPLACE = join('.agents', 'plugins', 'marketplace.json');
 const CODEX_INSTALL_POLICIES = new Set(['AVAILABLE', 'INSTALLED_BY_DEFAULT']);
@@ -555,6 +564,12 @@ function checkCodexPlugin(root, { portable, claude, marketplace }, skills, error
     if (codex.onboardingSkill !== undefined) {
       checkOnboardingSkill(file, codex.onboardingSkill, skills, error);
     }
+    if (codex.review !== undefined) {
+      checkCodexReview(root, file, codex.review, error);
+    }
+    if (codex.publication !== undefined) {
+      checkCodexPublication(file, codex.publication, error);
+    }
   } else {
     error(file, `needs extensions["${CODEX_EXTENSION}"], the Codex plugin's listing`);
   }
@@ -584,8 +599,8 @@ function checkCodexInterface(root, file, listing, portable, claude, error) {
   }
 
   // Codex fills these from plugin.json when they're missing; when they're given, they must agree with it.
+  // longDescription may say more than "description", which every client's listing shares.
   const filledIn = [
-    ['longDescription', portable.description, '"description"'],
     ['developerName', portable.author?.name, '"author.name"'],
     ['websiteURL', portable.homepage, '"homepage"'],
   ];
@@ -598,9 +613,19 @@ function checkCodexInterface(root, file, listing, portable, claude, error) {
   if (listing.category !== undefined && (typeof listing.category !== 'string' || !listing.category.trim())) {
     error(file, 'Codex interface "category" must be a word such as "Productivity"');
   }
-  for (const key of ['privacyPolicyURL', 'termsOfServiceURL']) {
-    if (listing[key] !== undefined && !/^https:\/\/\S+$/.test(listing[key])) {
-      error(file, `Codex interface "${key}" must be an https:// address`);
+  for (const [key, max] of Object.entries(CODEX_TEXT_LIMITS)) {
+    if (typeof listing[key] === 'string' && [...listing[key]].length > max) {
+      error(file, `Codex interface "${key}" is ${[...listing[key]].length} characters; the directory allows ${max}`);
+    }
+  }
+  for (const key of CODEX_URL_FIELDS) {
+    if (listing[key] === undefined) {
+      continue;
+    }
+    if (typeof listing[key] !== 'string' || !/^https:\/\/[^\s@]+$/.test(listing[key])) {
+      error(file, `Codex interface "${key}" must be an https:// address without credentials`);
+    } else if (listing[key].length > MAX_CODEX_URL_LENGTH) {
+      error(file, `Codex interface "${key}" is longer than ${MAX_CODEX_URL_LENGTH} characters`);
     }
   }
   if (listing.capabilities !== undefined && !isStringList(listing.capabilities)) {
@@ -649,6 +674,83 @@ function checkCodexPrompts(file, prompts, error) {
         `Codex interface "defaultPrompt" "${prompt}" is ${length} characters; Codex drops it past ${MAX_CODEX_PROMPT_LENGTH}`
       );
     }
+  }
+}
+
+/**
+ * The test cases OpenAI's reviewers run: exactly five that should use the tools and three that shouldn't, each
+ * tool named as the server's saved tools/list names it. Reviewer sign-in goes in the dashboard, never here.
+ */
+function checkCodexReview(root, file, review, error) {
+  if (!isObject(review)) {
+    error(file, `extensions["${CODEX_EXTENSION}"].review must be an object`);
+
+    return;
+  }
+  for (const key of Object.keys(review)) {
+    if (!CODEX_REVIEW_FIELDS.has(key)) {
+      error(file, `review has "${key}"; reviewer sign-in and instructions go in the dashboard, not the package`);
+    }
+  }
+  if (review.demo_recording_url !== undefined && !/^https:\/\/[^\s@]+$/.test(review.demo_recording_url)) {
+    error(file, 'review "demo_recording_url" must be an https:// address');
+  }
+  if (review.test_cases === undefined) {
+    return;
+  }
+
+  const toolsFile = join(root, 'evals', 'mocks', 'inbox', '_tools.json');
+  const saved = existsSync(toolsFile) ? readJson(toolsFile, error) : null;
+  const tools = saved ? new Set((saved.tools ?? []).map((tool) => tool.name)) : null;
+
+  for (const [kind, count] of Object.entries(CODEX_TEST_CASES)) {
+    const cases = review.test_cases?.[kind];
+    if (!Array.isArray(cases) || cases.length !== count) {
+      error(file, `review needs exactly ${count} ${kind} test cases, not ${Array.isArray(cases) ? cases.length : 0}`);
+    }
+    if (!Array.isArray(cases)) {
+      continue;
+    }
+    const required = kind === 'positive'
+      ? ['description', 'prompt', 'tools_triggered', 'expected_behavior']
+      : ['description', 'prompt', 'expected_behavior'];
+    cases.forEach((testCase, index) => {
+      for (const key of required) {
+        if (typeof testCase?.[key] !== 'string' || !testCase[key].trim()) {
+          error(file, `review ${kind} test case ${index + 1} needs "${key}" as text`);
+        }
+      }
+      if (tools && typeof testCase?.tools_triggered === 'string') {
+        for (const tool of testCase.tools_triggered.split(',').map((name) => name.trim()).filter(Boolean)) {
+          if (!tools.has(tool)) {
+            error(file, `review ${kind} test case ${index + 1} names "${tool}", which isn't a tool in ${relative(root, toolsFile)}`);
+          }
+        }
+      }
+    });
+  }
+}
+
+/** What the directory shows about this version, and where. Leaving "countries" out keeps the saved targeting. */
+function checkCodexPublication(file, publication, error) {
+  if (!isObject(publication)) {
+    error(file, `extensions["${CODEX_EXTENSION}"].publication must be an object`);
+
+    return;
+  }
+  for (const key of Object.keys(publication)) {
+    if (!CODEX_PUBLICATION_FIELDS.has(key)) {
+      error(file, `publication has "${key}", which the directory doesn't read`);
+    }
+  }
+  if (publication.release_notes !== undefined && (typeof publication.release_notes !== 'string' || !publication.release_notes.trim())) {
+    error(file, 'publication "release_notes" must be text');
+  }
+  if (
+    publication.countries !== undefined &&
+    !(isStringList(publication.countries) && publication.countries.every((code) => /^[A-Z]{2}$/.test(code)))
+  ) {
+    error(file, 'publication "countries" must be a list of uppercase country codes, such as ["US", "GB"]');
   }
 }
 

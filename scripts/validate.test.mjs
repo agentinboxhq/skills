@@ -233,6 +233,47 @@ describe('validate', () => {
     assert.match(errors, /"defaultPrompt" has 4 prompts; Codex shows only the first 3/);
   });
 
+  it('rejects a Codex listing past the directory limits, or with an address that is not https', () => {
+    const dir = copyRepo();
+    edit(dir, 'plugin.json', (text) => {
+      const plugin = JSON.parse(text);
+      const listing = plugin.extensions['com.openai'].interface;
+      listing.shortDescription = 'Reach a real person and wait for the answer';
+      listing.supportURL = 'http://www.agentinbox.md/support';
+      listing.privacyPolicyURL = 'https://user:secret@www.agentinbox.md/privacy';
+
+      return JSON.stringify(plugin);
+    });
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /Codex interface "shortDescription" is 43 characters; the directory allows 30/);
+    assert.match(errors, /Codex interface "supportURL" must be an https:\/\/ address/);
+    assert.match(errors, /Codex interface "privacyPolicyURL" must be an https:\/\/ address without credentials/);
+  });
+
+  it('rejects review test cases that are missing, incomplete or name tools the server lacks', () => {
+    const dir = copyRepo();
+    edit(dir, 'plugin.json', (text) => {
+      const plugin = JSON.parse(text);
+      const review = plugin.extensions['com.openai'].review;
+      review.test_cases.positive.pop();
+      review.test_cases.negative[0].expected_behavior = '';
+      review.test_cases.negative.push({ description: 'x', prompt: 'y', expected_behavior: 'z' });
+      review.test_cases.positive[0].tools_triggered = 'inbox_list, inbox_search';
+      review.test_credentials = { username: 'reviewer' };
+      plugin.extensions['com.openai'].publication.countries = ['us'];
+
+      return JSON.stringify(plugin);
+    });
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /review needs exactly 5 positive test cases, not 4/);
+    assert.match(errors, /review needs exactly 3 negative test cases, not 4/);
+    assert.match(errors, /review positive test case 1 names "inbox_search", which isn't a tool/);
+    assert.match(errors, /review has "test_credentials"; reviewer sign-in and instructions go in the dashboard/);
+    assert.match(errors, /publication "countries" must be a list of uppercase country codes/);
+  });
+
   it('rejects a Codex listing that names files that are not there', () => {
     const dir = copyRepo();
     edit(dir, 'plugin.json', (text) => {
@@ -264,7 +305,7 @@ describe('validate', () => {
 
     const errors = errorsOf(dir);
     assert.match(errors, /"name" must be "agentinbox", as in .claude-plugin\/marketplace.json/);
-    assert.match(errors, /has category "Developer Tools" but the Codex interface has "Productivity"/);
+    assert.match(errors, /has category "Developer Tools" but the Codex interface has "Communication"/);
     assert.match(errors, /"policy.installation" must be AVAILABLE or INSTALLED_BY_DEFAULT/);
   });
 
