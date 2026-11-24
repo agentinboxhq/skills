@@ -130,7 +130,7 @@ npx @agentinbox/cli contact invite <id|email> [--name "Alice Chen"] [--via <chan
 
 ## In a run that listen started
 
-When `listen` started you for a conversation, your own reading and answering in that conversation runs without asking anyone:
+When `listen` started you for your operator's own conversation, or a full-access contact's, your own reading and answering in it runs without asking anyone. In a contact's conversation, or a group, you have the `this_conversation` tools instead, and these commands run only where the folder's own settings allow them (SKILL.md, "In a contact's conversation, or a group"):
 
 | Command, for that conversation | Flags that still run without asking |
 |---|---|
