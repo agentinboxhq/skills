@@ -1,0 +1,18 @@
+{
+  "name": "agentinbox",
+  "displayName": "Agent Inbox",
+  "description": "Gives your agent an E-mail address, Telegram handle, and Slack bot in a unified communication Inbox.",
+  "author": {
+    "name": "Agent Inbox",
+    "url": "https://www.agentinbox.md"
+  },
+  "homepage": "https://www.agentinbox.md",
+  "repository": "https://github.com/agentinboxhq/skills",
+  "documentationUrl": "https://www.agentinbox.md/claude-code",
+  "supportUrl": "https://github.com/agentinboxhq/skills/issues",
+  "privacyPolicyUrl": "https://www.novu.co/privacy/",
+  "termsOfServiceUrl": "https://www.novu.co/terms/",
+  "license": "MIT",
+  "keywords": ["agentinbox", "human-in-the-loop", "approvals", "inbox", "telegram", "slack", "email", "mcp"],
+  "icon": "./assets/icon.png"
+}
