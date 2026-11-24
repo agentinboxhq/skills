@@ -119,7 +119,10 @@ skills.sh.json               how skills.sh groups the skills on its page
 scripts/validate.mjs         the checks CI runs
 scripts/check-codex-plugin.mjs   installs the plugin into a throwaway Codex home and checks it
 scripts/package-openai.mjs   builds the ZIP for OpenAI's plugin directory (ChatGPT and Codex)
+.github/workflows/validate.yml   the checks CI runs, and the copy of the plugin to the claude-plugin branch
 ```
+
+The `claude-plugin` branch holds only the Claude Code plugin's own files, for Anthropic's plugin directory. CI writes it; see [Anthropic's plugin directory](#anthropics-plugin-directory).
 
 ## Change a skill
 
@@ -135,7 +138,7 @@ claude plugin validate .                                       # the Claude Code
 node scripts/check-codex-plugin.mjs                            # the Codex plugin, installed for real
 ```
 
-CI runs all five on every pull request. A merge to `main` ships right away for new installs: `npx skills add` and both plugin marketplaces read `main`. The plugin has no `version`, so Claude Code treats each commit as a new version, and Codex reinstalls it whenever its marketplace has a new commit. Existing installs get it with `npx skills update`, `claude plugin update`, or `codex plugin marketplace upgrade agentinbox`; Codex also checks each time it starts.
+CI runs all five on every pull request. A merge to `main` ships right away for new installs: `npx skills add` and both plugin marketplaces read `main`. Anthropic's plugin directory reads the `claude-plugin` branch instead, which CI updates once the merge passes the checks. The plugin has no `version`, so Claude Code treats each commit as a new version, and Codex reinstalls it whenever its marketplace has a new commit. Existing installs get it with `npx skills update`, `claude plugin update`, or `codex plugin marketplace upgrade agentinbox`; Codex also checks each time it starts.
 
 When you write:
 
@@ -154,6 +157,15 @@ claude plugin eval .                                  # every case, with a no-pl
 ```
 
 See [evals/README.md](evals/README.md) for what each case checks.
+
+### Anthropic's plugin directory
+
+Anthropic's plugin directory doesn't read `main`. From an organization it hasn't Verified, it takes only Markdown, text, JSON, YAML and PNG, JPEG, GIF, WebP or ICO images, and it refuses a version that holds anything else, such as the scripts in `scripts/`. So it reads the `claude-plugin` branch, which holds only the plugin's own files: the ones `PLUGIN_FILES` lists in `.github/workflows/validate.yml`, which are `.claude-plugin/plugin.json`, `.mcp.json`, the icon, `skills/`, this README and the license.
+
+- Change the plugin on `main`, never on `claude-plugin`. After a merge to `main`, once the checks pass, CI copies those files to `claude-plugin` as one new commit, and only when one of them changed. The next copy overwrites anything committed to the branch by hand.
+- The directory looks for a new commit on the branch about every 6 hours. For now, an Anthropic reviewer approves each version before it goes live.
+- `validate.mjs` checks that each file in `PLUGIN_FILES` is one the directory takes, so a skill can't bring a script along. To ship another file with the plugin, add it to `PLUGIN_FILES`.
+- The submission follows the branch: in the developer portal (claude.ai/directory/manage), it's the plugin's Settings, "Tracked branch or tag". If a copy fails, re-run the Validate workflow on `main` from the Actions tab.
 
 ### OpenAI's plugin directory
 

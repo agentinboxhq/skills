@@ -3,13 +3,15 @@
  * Checks this repository the way an installer and a reviewer would: every skill against the Agent Skills
  * spec (https://agentskills.io/specification) and this repo's own rules, the plugin manifests against each
  * other, the Codex plugin's listing and marketplace against the plugin, the plugin's MCP server against the
- * address the skills give, and the README, skills.sh.json and evals against the skills that exist.
+ * address the skills give, the README, skills.sh.json and evals against the skills that exist, and the files the
+ * claude-plugin branch holds against what Anthropic's plugin directory takes.
  *
  * Usage: node scripts/validate.mjs [repo-root]
  * Needs only Node.js 20 or later, no packages.
  */
+import { isUtf8 } from 'node:buffer';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /** The frontmatter fields the spec allows. claude.ai uploads accept exactly these too. */
@@ -135,6 +137,35 @@ const MAX_ICON_SIZE = 2048;
 const MAX_ICON_BYTES = 2 * 1024 * 1024;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
+/**
+ * Anthropic's plugin directory takes scripts and other programs only from an organization it has Verified, and
+ * refuses a version that holds one. So it reads the claude-plugin branch, which CI fills with the files that
+ * PLUGIN_FILES lists in the workflow, and these are the rules each of those files must meet.
+ */
+const WORKFLOW = join('.github', 'workflows', 'validate.yml');
+/**
+ * What the branch can't go without: the manifest, the MCP server, the skills, the README the directory shows, and
+ * the license.
+ */
+const REQUIRED_PLUGIN_FILES = ['.claude-plugin/plugin.json', '.mcp.json', 'skills', 'README.md', 'LICENSE'];
+/** The only hidden files the plugin needs. The directory refuses .claude/ folders and other plugins' manifests. */
+const HIDDEN_PLUGIN_FILES = new Set(['.claude-plugin/plugin.json', '.mcp.json']);
+const DIRECTORY_TEXT_TYPES = new Set(['.md', '.txt', '.json', '.yml', '.yaml']);
+/** The images the directory takes, by the bytes each starts with. */
+const DIRECTORY_IMAGE_TYPES = new Map([
+  ['.png', [PNG_SIGNATURE]],
+  ['.jpg', [Buffer.from([0xff, 0xd8, 0xff])]],
+  ['.jpeg', [Buffer.from([0xff, 0xd8, 0xff])]],
+  ['.gif', [Buffer.from('GIF87a'), Buffer.from('GIF89a')]],
+  ['.webp', [Buffer.from('RIFF')]],
+  ['.ico', [Buffer.from([0x00, 0x00, 0x01, 0x00])]],
+]);
+/** The start of a file in a zip archive. The directory refuses an image that holds one. */
+const ZIP_SIGNATURE = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
+/** Files the directory refuses whatever they hold: instructions only Claude Code reads, and lists of packages. */
+const DIRECTORY_REFUSED_NAMES =
+  /^(?:claude(?:\.local)?\.md|agents\.md|package(?:-lock)?\.json|npm-shrinkwrap\.json|pnpm-(?:lock|workspace)\.yaml|requirements[\w.-]*\.txt)$/i;
+
 /** Characters that YAML reads as syntax when a plain value starts with them. */
 const YAML_INDICATORS = '-?:,[]{}#&*!|>\'"%@`';
 
@@ -159,6 +190,7 @@ export function validate(root) {
 
   const skills = checkSkills(root, error, warn);
   const manifests = checkManifests(root, error);
+  checkPluginFiles(root, manifests.claude, error);
   checkCodexPlugin(root, manifests, skills, error);
   checkCursorManifest(root, manifests.claude ?? manifests.portable, error);
   const servers = checkMcpServers(root, skills, error);
@@ -434,6 +466,87 @@ function checkManifests(root, error) {
 }
 
 /**
+ * The files PLUGIN_FILES lists in the workflow are what the claude-plugin branch holds, and Anthropic's plugin
+ * directory reads that branch. They must include what the plugin needs, and each must be a file the directory takes.
+ */
+function checkPluginFiles(root, claude, error) {
+  const workflow = join(root, WORKFLOW);
+  const listed = existsSync(workflow) && /^\s*PLUGIN_FILES:\s*(.+?)\s*$/m.exec(readFileSync(workflow, 'utf8'));
+  if (!listed) {
+    error(workflow, "needs PLUGIN_FILES: the files the claude-plugin branch holds for Anthropic's plugin directory");
+
+    return;
+  }
+
+  const paths = listed[1].split(/\s+/);
+  const icon = typeof claude?.icon === 'string' ? [claude.icon.replace(/^\.\//, '')] : [];
+  for (const path of [...REQUIRED_PLUGIN_FILES, ...icon]) {
+    if (!paths.includes(path)) {
+      error(workflow, `PLUGIN_FILES must list ${path}, or the claude-plugin branch goes without it`);
+    }
+  }
+
+  for (const path of paths) {
+    const target = resolve(root, path);
+    if (relative(root, target).startsWith('..') || !existsSync(target)) {
+      error(workflow, `PLUGIN_FILES lists ${path}, which isn't in this repository`);
+      continue;
+    }
+    for (const file of isDirectory(target) ? listFiles(target) : [target]) {
+      const problem = directoryProblem(relative(root, file).split(sep).join('/'), readFileSync(file));
+      if (problem) {
+        error(file, problem);
+      }
+    }
+  }
+}
+
+/** Why Anthropic's plugin directory would refuse this file from an organization it hasn't Verified, or null. */
+function directoryProblem(path, bytes) {
+  const name = path.split('/').at(-1);
+  const type = extname(name).toLowerCase();
+  if (!/^[\w./-]+$/.test(path)) {
+    return (
+      'the plugin directory refuses a path with a character not every computer keeps; ' +
+      'use letters, digits, ".", "-" and "_"'
+    );
+  }
+  if (DIRECTORY_REFUSED_NAMES.test(name)) {
+    return `the plugin directory refuses ${name} in a plugin, whatever it holds`;
+  }
+  if (path.split('/').some((part) => part.startsWith('.')) && !HIDDEN_PLUGIN_FILES.has(path)) {
+    return 'keep hidden files out of the plugin; only .claude-plugin/plugin.json and .mcp.json belong there';
+  }
+
+  const signatures = DIRECTORY_IMAGE_TYPES.get(type);
+  if (signatures) {
+    if (!signatures.some((signature) => bytes.subarray(0, signature.length).equals(signature))) {
+      return `isn't the ${type.slice(1).toUpperCase()} image its name says, so the plugin directory refuses it`;
+    }
+    if (bytes.includes(ZIP_SIGNATURE)) {
+      return 'looks like it holds a zip archive, which the plugin directory refuses; export it again without metadata';
+    }
+
+    return null;
+  }
+
+  if (!DIRECTORY_TEXT_TYPES.has(type) && name !== 'LICENSE') {
+    return (
+      'the plugin directory takes only Markdown, text, JSON, YAML and PNG, JPEG, GIF, WebP or ICO images ' +
+      "from an organization it hasn't Verified; keep scripts out of PLUGIN_FILES"
+    );
+  }
+  if (bytes.includes(0) || !isUtf8(bytes)) {
+    return 'the plugin directory takes text only as UTF-8 without NUL bytes';
+  }
+  if (bytes.subarray(0, 2).toString() === '#!') {
+    return 'starts with "#!", which the plugin directory takes only from a Verified organization';
+  }
+
+  return null;
+}
+
+/**
  * The Cursor plugin is this same plugin: the name, words and logo of the Claude Code one, and the servers in
  * .mcp.json. Grok Bot installs plugins from the Cursor Marketplace too, and it connects only to a hosted server
  * marked `"placement": "server"` (https://github.com/cursor/plugins/commit/dcb387cb06751c4efa0ff00c30477ab1cfaa1bdc);
@@ -699,8 +812,10 @@ function checkCodexReview(root, file, review, error) {
     return;
   }
 
-  const toolsFile = join(root, 'evals', 'mocks', 'inbox', '_tools.json');
-  const saved = existsSync(toolsFile) ? readJson(toolsFile, error) : null;
+  // The server's saved tools/list, which the evals' stand-in server keeps under the server's name in .mcp.json.
+  const [server] = Object.keys(readJson(join(root, '.mcp.json'), () => {})?.mcpServers ?? {});
+  const toolsFile = server ? join(root, 'evals', 'mocks', server, '_tools.json') : null;
+  const saved = toolsFile && existsSync(toolsFile) ? readJson(toolsFile, error) : null;
   const tools = saved ? new Set((saved.tools ?? []).map((tool) => tool.name)) : null;
 
   for (const [kind, count] of Object.entries(CODEX_TEST_CASES)) {

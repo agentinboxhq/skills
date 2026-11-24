@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+env:
+  # The Claude Code plugin's own files. Anthropic's plugin directory refuses scripts from an organization it hasn't
+  # Verified, so it reads the claude-plugin branch, which holds only these (the last job copies them there).
+  # scripts/validate.mjs checks that each one is a type the directory takes.
+  PLUGIN_FILES: .claude-plugin/plugin.json .mcp.json assets/icon.png skills README.md LICENSE
+
 jobs:
   repo:
     name: Repo rules
@@ -46,6 +52,11 @@ jobs:
       # Not --strict: the plugin has no "version" on purpose, so every commit on main is a new version.
       - name: Validate the plugin and its marketplace
         run: npx --yes @anthropic-ai/claude-code@2.1.308 plugin validate .
+      - name: Validate the plugin as the claude-plugin branch holds it
+        run: |
+          mkdir "$RUNNER_TEMP/claude-plugin"
+          git archive HEAD -- $PLUGIN_FILES | tar -x -C "$RUNNER_TEMP/claude-plugin"
+          npx --yes @anthropic-ai/claude-code@2.1.308 plugin validate "$RUNNER_TEMP/claude-plugin"
 
   codex-plugin:
     name: Codex plugin
@@ -60,3 +71,60 @@ jobs:
         env:
           CODEX_CLI: npx --yes @openai/codex@0.160.0
         run: node scripts/check-codex-plugin.mjs
+
+  # After a merge to main, once the checks above pass, copies the files in PLUGIN_FILES to the claude-plugin branch
+  # as one new commit, and only when one of them changed. Never edit that branch: the next copy overwrites it.
+  claude-plugin-branch:
+    name: Copy the plugin to the claude-plugin branch
+    if: github.ref == 'refs/heads/main'
+    needs: [repo, spec, claude-plugin]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # One copy at a time, so an older commit's copy can't land after a newer one's.
+    concurrency: claude-plugin-branch
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Commit the plugin's files to claude-plugin
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          branch=claude-plugin
+
+          # The run for a newer commit copies that one, so the branch never goes back to older files.
+          if [ "$(git ls-remote origin refs/heads/main | cut -f1)" != "$GITHUB_SHA" ]; then
+            echo "main has moved past $GITHUB_SHA; the run for the newer commit copies the plugin."
+            exit 0
+          fi
+
+          # A tree of just those files, built in a scratch index so the checkout stays as it is.
+          for path in $PLUGIN_FILES; do
+            if ! git cat-file -e "$GITHUB_SHA:$path"; then
+              echo "::error::PLUGIN_FILES lists $path, which isn't on main"
+              exit 1
+            fi
+          done
+          export GIT_INDEX_FILE="$RUNNER_TEMP/claude-plugin.index"
+          git ls-tree -r -z "$GITHUB_SHA" -- $PLUGIN_FILES | git update-index -z --index-info
+          tree=$(git write-tree)
+          unset GIT_INDEX_FILE
+
+          parent=()
+          if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            git fetch --quiet --depth=1 origin "refs/heads/$branch"
+            if [ "$(git rev-parse 'FETCH_HEAD^{tree}')" = "$tree" ]; then
+              echo "The plugin's files haven't changed since the last copy."
+              exit 0
+            fi
+            parent=(-p FETCH_HEAD)
+          fi
+
+          commit=$(git commit-tree "$tree" ${parent[@]+"${parent[@]}"} \
+            -m "Copy the plugin from main at ${GITHUB_SHA::7}" \
+            -m "CI copies the files in PLUGIN_FILES here after each merge to main. Change them on main.")
+          git push origin "$commit:refs/heads/$branch"
+          echo "$branch is now $commit, with the plugin from main at $GITHUB_SHA."
