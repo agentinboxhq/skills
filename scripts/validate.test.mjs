@@ -185,6 +185,43 @@ describe('validate', () => {
     assert.match(errorsOf(dir), /"icon" points at .\/assets\/logo.png, which isn't a file in this repository/);
   });
 
+  it("rejects a plugin file that Anthropic's plugin directory would refuse", () => {
+    const dir = copyRepo();
+    writeFileSync(join(dir, 'skills/agentinbox/references/check.mjs'), 'console.log("checked");\n');
+    writeFileSync(join(dir, 'skills/agentinbox/references/run.md'), '#!/bin/sh\necho run\n');
+    // "café" in Latin-1, not UTF-8.
+    writeFileSync(join(dir, 'skills/agentinbox/references/notes.txt'), Buffer.from([0x63, 0x61, 0x66, 0xe9, 0x0a]));
+    writeFileSync(join(dir, 'skills/agentinbox/AGENTS.md'), '# Agents\n');
+    mkdirSync(join(dir, 'skills/agentinbox/.claude'));
+    writeFileSync(join(dir, 'skills/agentinbox/.claude/settings.json'), '{}\n');
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /references\/check.mjs: the plugin directory takes only Markdown, text, JSON, YAML/);
+    assert.match(errors, /references\/run.md: starts with "#!"/);
+    assert.match(errors, /references\/notes.txt: the plugin directory takes text only as UTF-8/);
+    assert.match(errors, /agentinbox\/AGENTS.md: the plugin directory refuses AGENTS.md in a plugin/);
+    assert.match(errors, /\.claude\/settings.json: keep hidden files out of the plugin/);
+  });
+
+  it('rejects a PLUGIN_FILES list that leaves out what the plugin needs or names what is not there', () => {
+    const dir = copyRepo();
+    edit(dir, '.github/workflows/validate.yml', (text) =>
+      text.replace('PLUGIN_FILES: .claude-plugin/plugin.json .mcp.json assets/icon.png', 'PLUGIN_FILES: .mcp.json docs')
+    );
+
+    const errors = errorsOf(dir);
+    assert.match(errors, /PLUGIN_FILES must list .claude-plugin\/plugin.json/);
+    assert.match(errors, /PLUGIN_FILES must list assets\/icon.png/);
+    assert.match(errors, /PLUGIN_FILES lists docs, which isn't in this repository/);
+  });
+
+  it('leaves the files outside PLUGIN_FILES, such as the scripts, to this repository', () => {
+    const dir = copyRepo();
+    writeFileSync(join(dir, 'scripts/release.sh'), '#!/bin/sh\necho release\n');
+
+    assert.doesNotMatch(errorsOf(dir), /release.sh/);
+  });
+
   it('rejects an MCP server at an address the skills do not give', () => {
     const dir = copyRepo();
     edit(dir, '.mcp.json', (text) => text.replace('https://mcp.agentinbox.md', 'https://mcp.agentinbox.md/mcp'));
